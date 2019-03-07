@@ -3,7 +3,7 @@ FROM ruby:2-alpine
 RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories \
   && apk update \
   && apk add --update-cache postgresql-client nodejs yarn \
-    libffi-dev readline build-base postgresql-dev \
+    bash libffi-dev readline build-base postgresql-dev \
     libc-dev linux-headers libxml2-dev libxslt-dev readline-dev gcc libc-dev \
   && rm -rf /var/cache/apk/*
 
