@@ -7,7 +7,12 @@
     "babel-plugin-transform-react-remove-prop-types": "^0.4.24",
     "prop-types": "^15.7.2",
     "react": "^16.8.4",
-    "react-dom": "^16.8.4"
+    "react-actioncable-provider": "^2.0.0",
+    "react-dom": "^16.8.4",
+    "react-router": "^4.3.1",
+    "react-router-dom": "^4.3.1",
+    "resolve-url-loader": "^3.0.1",
+    "webpack-cli": "^3.2.3"
   },
   "devDependencies": {
     "webpack-dev-server": "^3.2.1"

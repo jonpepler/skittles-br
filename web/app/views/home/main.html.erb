@@ -1,1 +1,14 @@
-<h1>Hey!</h1>
+<!-- Layout here because we're not inheriting from Application::Base, but Application::API -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Skittles: BATTLE ROYALE</title>
+
+    <%= javascript_pack_tag 'app/index' %>
+    <%= stylesheet_pack_tag 'app/assets/stylesheets/app' %>
+  </head>
+
+  <body>
+    <div id='app'></div>
+  </body>
+</html>
