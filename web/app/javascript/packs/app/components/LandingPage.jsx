@@ -1,4 +1,7 @@
 import React from 'react';
+
+import Game from './Game';
+
 class LandingPage extends React.Component {
   constructor(){
     super();
@@ -18,7 +21,7 @@ class LandingPage extends React.Component {
     return(
       <div>
         <h1>Skittles: BATTLE ROYALE</h1>
-        <div className="btn btn--large" onClick={this.test}>New Game ({this.state.count})</div>
+        <Game/>
       </div>
     )
   }

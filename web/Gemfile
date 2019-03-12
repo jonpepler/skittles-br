@@ -17,6 +17,10 @@ gem 'uglifier', '>= 1.3.0'
 gem 'webpacker'
 gem 'tzinfo-data'
 
+# Track user guest sessions for ActionCable
+gem 'devise', '~> 4.0'
+gem 'devise-guests'
+
 # See https://github.com/rails/execjs#readme for more supported runtimes
 # gem 'mini_racer', platforms: :ruby
 
