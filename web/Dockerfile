@@ -9,10 +9,9 @@ RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/reposit
 
 RUN mkdir /skittles-br
 WORKDIR /skittles-br
-COPY Gemfile /skittles-br/Gemfile
-COPY Gemfile.lock /skittles-br/Gemfile.lock
-RUN bundle install
 COPY . /skittles-br
+RUN bundle install
+RUN yarn install
 
 # Add a script to be executed every time the container starts.
 COPY entrypoint.sh /usr/bin/
