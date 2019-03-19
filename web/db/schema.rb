@@ -10,15 +10,13 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2019_03_18_225024) do
+ActiveRecord::Schema.define(version: 2019_03_19_010556) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "pgcrypto"
   enable_extension "plpgsql"
 
   create_table "games", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
-    t.uuid "player_id"
-    t.index ["player_id"], name: "index_games_on_player_id"
   end
 
   create_table "players", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -26,8 +24,10 @@ ActiveRecord::Schema.define(version: 2019_03_18_225024) do
     t.string "encrypted_password", default: "", null: false
     t.datetime "remember_created_at"
     t.boolean "guest", default: false
+    t.uuid "game_id"
     t.index ["email"], name: "index_players_on_email", unique: true
+    t.index ["game_id"], name: "index_players_on_game_id"
   end
 
-  add_foreign_key "games", "players"
+  add_foreign_key "players", "games"
 end
