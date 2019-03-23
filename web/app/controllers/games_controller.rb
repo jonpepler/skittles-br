@@ -5,6 +5,7 @@ class GamesController < ApplicationController
   end
 
   def find_or_create
+    byebug
     g = Game.create
     render json: { id: g.id }
   end

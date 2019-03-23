@@ -1,13 +1,17 @@
-import React from 'react';
+import React from 'react'
 
-import Game from './Game';
+import MatchMaker from './MatchMaker'
 
 class LandingPage extends React.Component {
-  render() {
-    return(
+  render () {
+    return (
       <div>
         <h1>Skittles: BATTLE ROYALE</h1>
-        <Game/>
+        <MatchMaker
+          match={this.props.match}
+          history={this.props.history}
+          location={this.props.location}
+        />
       </div>
     )
   }
