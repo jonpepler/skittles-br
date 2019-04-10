@@ -8,8 +8,7 @@ module ApplicationCable
 
     private
       def find_verified_player
-        id = cookies.encrypted[:player_id] || cookies.encrypted[:guest_player_id]
-        byebug
+        id = cookies.signed[:player_id]
         if verified_player = Player.find_by(id: id)
           verified_player
         else

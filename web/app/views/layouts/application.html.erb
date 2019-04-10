@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>SkittlesBr</title>
+    <title>Skittles: BATTLE ROYALE</title>
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
-    <%= javascript_pack_tag ‘hello_react’ %>
     <%= javascript_pack_tag 'app/index' %>
     <%= stylesheet_pack_tag 'app/assets/stylesheets/app' %>
   </head>
 
   <body>
+    <p class="notice"><%= notice %></p>
+    <p class="alert"><%= alert %></p>
     <%= yield %>
-    <script> console.log('hello?')</script>
   </body>
 </html>

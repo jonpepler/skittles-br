@@ -1,6 +1,6 @@
 class HomeController < ApplicationController
   def main
     g = current_or_guest_player
-    session['player_id'] = g
+    cookies.signed[:player_id] = g.id
   end
 end
