@@ -2,11 +2,15 @@ import React from 'react'
 import ActionCable from 'actioncable'
 
 class Game extends React.Component {
-  constructor (props) {
-    super(props)
+  constructor () {
+    super()
 
     this.establishActionCable = this.establishActionCable.bind(this)
     this.handleReceiveNewData = this.handleReceiveNewData.bind(this)
+
+    this.state = {
+      gameData: {}
+    }
   }
 
   componentDidMount () {
@@ -15,14 +19,13 @@ class Game extends React.Component {
 
   establishActionCable () {
     const cable = ActionCable.createConsumer('/cable')
-    this.sub = cable.subscriptions.create({ channel: 'GameChannel', id: this.props.id }, {
+    this.sub = cable.subscriptions.create({ channel: 'GamesChannel', id: this.props.id }, {
       received: this.handleReceiveNewData
     })
   }
 
-  handleReceiveNewData (data) {
-    debugger
-    this.setState({ data })
+  handleReceiveNewData (gameData) {
+    this.setState({ gameData })
   }
 
   render () {
@@ -38,7 +41,7 @@ class Game extends React.Component {
     // } else {
     //   return (<div className='btn btn--large' onClick={this.newGame}>New Game</div>)
     // }
-    return (<div>Wow! You're in a game</div>)
+    return (<div>Wow! You're in a game: {this.props.id}</div>)
   }
 }
 export default Game

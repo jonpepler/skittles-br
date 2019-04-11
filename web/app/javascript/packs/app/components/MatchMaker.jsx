@@ -1,5 +1,4 @@
 import React from 'react'
-import ActionCable from 'actioncable'
 
 import Game from './Game'
 
@@ -7,29 +6,12 @@ class MatchMaker extends React.Component {
   constructor () {
     super()
 
-    this.establishActionCable = this.establishActionCable.bind(this)
-    this.handleReceiveNewData = this.handleReceiveNewData.bind(this)
     this.newGame = this.newGame.bind(this)
     this.gameReady = this.gameReady.bind(this)
 
     this.state = {
       gameFound: false
     }
-  }
-
-  componentDidMount () {
-    this.establishActionCable()
-  }
-
-  establishActionCable () {
-    const cable = ActionCable.createConsumer('/cable')
-    this.sub = cable.subscriptions.create({ channel: 'GameChannel', id: this.state.gameID }, {
-      received: this.handleReceiveNewData
-    })
-  }
-
-  handleReceiveNewData (data) {
-    this.setState({ data })
   }
 
   newGame () {
