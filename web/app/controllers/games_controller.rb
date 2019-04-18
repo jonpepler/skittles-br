@@ -6,7 +6,9 @@ class GamesController < ApplicationController
 
   def find_or_create
     g = Game.create
-    g.players << current_or_guest_player
+    p = current_or_guest_player
+    p.game = nil
+    g.players << p
     render json: { id: g.id }
   end
 end
