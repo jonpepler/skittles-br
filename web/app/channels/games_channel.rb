@@ -1,10 +1,19 @@
 class GamesChannel < ApplicationCable::Channel
   def subscribed
-    reject unless Game.find(params[:id]).players.include?(current_or_guest_player)
-    stream_from "games_channel"
+    @game = Game.find(params[:id])
+    reject unless @game.players.include?(current_or_guest_player)
+    stream_for @game
   end
 
   def unsubscribed
-    # Any cleanup needed when channel is unsubscribed
+    @game.players.delete(current_or_guest_player)
+  end
+
+  def update_counter
+    @game.update(test_counter: (@game.test_counter || 0) + 1)
+    GamesChannel.broadcast_to(@game, {
+      action: 'counter_update',
+      test_counter: @game.test_counter
+    })
   end
 end

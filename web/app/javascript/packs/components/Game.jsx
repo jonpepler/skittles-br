@@ -27,7 +27,6 @@ class Game extends React.Component {
   }
 
   handleReceiveNewData (gameData) {
-    debugger
     console.log(gameData)
     switch (gameData.action) {
       case 'counter_update': {
@@ -66,8 +65,13 @@ class Game extends React.Component {
         </div>
         <div>
           <div>Your score: {this.state.counter}</div>
-          <div className='btn' onClick={this.updateChannel}>
-            (increase)
+          <div className='score-panel'>
+            <div className='btn' onClick={this.updateChannel}>
+              (increase)
+            </div>
+            <div className='score-panel--counter'>
+              {this.state.testCounter}
+            </div>
           </div>
         </div>
       </div>
