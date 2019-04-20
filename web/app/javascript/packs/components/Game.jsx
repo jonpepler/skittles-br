@@ -7,9 +7,11 @@ class Game extends React.Component {
 
     this.establishActionCable = this.establishActionCable.bind(this)
     this.handleReceiveNewData = this.handleReceiveNewData.bind(this)
+    this.updateChannel = this.updateChannel.bind(this)
 
     this.state = {
-      gameData: {}
+      gameData: {},
+      testCounter: 0
     }
   }
 
@@ -25,7 +27,23 @@ class Game extends React.Component {
   }
 
   handleReceiveNewData (gameData) {
-    this.setState({ gameData })
+    debugger
+    console.log(gameData)
+    switch (gameData.action) {
+      case 'counter_update': {
+        console.log(gameData.test_counter)
+        this.setState({ testCounter: gameData.test_counter })
+        break
+      }
+      default: {
+        console.log(gameData.id)
+        this.setState({ gameID: gameData.id })
+      }
+    }
+  }
+
+  updateChannel () {
+    this.sub.perform('update_counter')
   }
 
   render () {
@@ -41,7 +59,19 @@ class Game extends React.Component {
     // } else {
     //   return (<div className='btn btn--large' onClick={this.newGame}>New Game</div>)
     // }
-    return (<div>Wow! You're in a game: {this.props.id}</div>)
+    return (
+      <div>
+        <div>
+          Wow! You're in a game: {this.state.gameID}
+        </div>
+        <div>
+          <div>Your score: {this.state.counter}</div>
+          <div className='btn' onClick={this.updateChannel}>
+            (increase)
+          </div>
+        </div>
+      </div>
+    )
   }
 }
 export default Game
