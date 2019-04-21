@@ -10,10 +10,13 @@ class GamesChannel < ApplicationCable::Channel
   end
 
   def update_counter
-    @game.update(test_counter: (@game.test_counter || 0) + 1)
+    counter = $redis.get("game:#{@game.id}").to_i
+    counter += 1
+    $redis.set("game:#{@game.id}", counter)
+
     GamesChannel.broadcast_to(@game, {
       action: 'counter_update',
-      test_counter: @game.test_counter
+      test_counter: counter
     })
   end
 end

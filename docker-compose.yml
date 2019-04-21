@@ -16,5 +16,11 @@ services:
       - "3000:3000"
     depends_on:
       - db
+      - redis
     stdin_open: true
     tty: true
+  redis:
+    image: redis
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - ./tmp/redis:/data
