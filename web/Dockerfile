@@ -13,6 +13,9 @@ COPY . /skittles-br
 RUN bundle install
 RUN yarn install
 
+# Only precompile assets when not in development mode.
+RUN if [ "${RAILS_ENV}" != "development" ]; then rails assets:precompile; fi
+
 # Add a script to be executed every time the container starts.
 COPY entrypoint.sh /usr/bin/
 RUN chmod +x /usr/bin/entrypoint.sh
