@@ -32,7 +32,7 @@ class MatchMaker extends React.Component {
     if (this.gameReady()) {
       return (
         <div>
-          <Game id={this.state.data.id} />
+          <Game id={this.state.data.id} pid={this.state.data.pid} />
         </div>
       )
     } else {

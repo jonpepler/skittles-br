@@ -9,14 +9,21 @@ class GamesChannel < ApplicationCable::Channel
     @game.players.delete(current_or_guest_player)
   end
 
-  def update_counter
-    counter = $redis.get("game:#{@game.id}").to_i
-    counter += 1
-    $redis.set("game:#{@game.id}", counter)
+  def update_skittles(data)
+    id_string = "game:#{@game.id}:#{current_or_guest_player.id}"
+    skittles = data['skittles']
+
+    $redis.set(id_string, skittles.to_json)
 
     GamesChannel.broadcast_to(@game, {
-      action: 'counter_update',
-      test_counter: counter
+      game_id: @game.id,
+      action: 'skittles_update',
+      skittles: JSON.parse($redis.get(id_string)),
+      player: current_or_guest_player.id
     })
+  end
+
+  def update_colour_values_NAME?
+    values = $redis.hgetall("game:#{@game.id}:#{current_or_guest_player.id}")
   end
 end

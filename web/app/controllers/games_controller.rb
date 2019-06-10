@@ -5,10 +5,17 @@ class GamesController < ApplicationController
   end
 
   def find_or_create
-    g = Game.create
+    open_games = Game.matchmaking
+
+    if(open_games.count == 0)
+      # In future use delayed job from init status
+      g = Game.create(status: "matchmaking")
+    else
+      g = open_games.first
+    end
     p = current_or_guest_player
-    p.game = nil
-    g.players << p
-    render json: { id: g.id }
+    p.leave_current_game unless p.game.nil?
+    g.add_player p
+    render json: { id: g.id, pid: p.id }
   end
 end

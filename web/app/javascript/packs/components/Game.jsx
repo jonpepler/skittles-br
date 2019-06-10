@@ -7,11 +7,17 @@ class Game extends React.Component {
 
     this.establishActionCable = this.establishActionCable.bind(this)
     this.handleReceiveNewData = this.handleReceiveNewData.bind(this)
-    this.updateChannel = this.updateChannel.bind(this)
+    this.updateSkittles = this.updateSkittles.bind(this)
 
     this.state = {
       gameData: {},
-      testCounter: 0
+      skittles: {
+        purple: 0,
+        yellow: 0,
+        green: 0,
+        orange: 0,
+        red: 0
+      }
     }
   }
 
@@ -29,9 +35,11 @@ class Game extends React.Component {
   handleReceiveNewData (gameData) {
     console.log(gameData)
     switch (gameData.action) {
-      case 'counter_update': {
-        console.log(gameData.test_counter)
-        this.setState({ testCounter: gameData.test_counter })
+      case 'skittles_update': {
+        // NOTE think about the security of this, and how you want it to work
+        if (gameData.player === this.state.pid) {
+          this.setState({ skittles: gameData.skittles })
+        }
         break
       }
       default: {
@@ -41,36 +49,46 @@ class Game extends React.Component {
     }
   }
 
-  updateChannel () {
-    this.sub.perform('update_counter')
+  /*
+    NOTE: In the future it should only be possible
+    to take actions that affect skittles, not
+    change their values directly
+  */
+  updateSkittles (colour, value) {
+    this.setState(s => {
+      let newValue = {}
+      newValue[colour] = value
+      return {
+        skittles: {
+          ...s.skittles,
+          ...newValue
+        }
+      }
+    }, () => this.sub.perform('update_skittles', { skittles: this.state.skittles }))
   }
 
   render () {
-    // if (this.state.inGame) {
-    //   let divs = []
-    //   debugger
-    //   Object.keys(this.state.data).forEach(k => divs.push(<div>{this.state.data[k].toString()}</div>))
-    //   return (
-    //     <React.Fragment>
-    //       {divs}
-    //     </React.Fragment>
-    //   )
-    // } else {
-    //   return (<div className='btn btn--large' onClick={this.newGame}>New Game</div>)
-    // }
     return (
       <div>
         <div>
           Wow! You're in a game: {this.state.gameID}
         </div>
         <div>
-          <div>Your score: {this.state.counter}</div>
           <div className='score-panel'>
-            <div className='btn' onClick={this.updateChannel}>
-              (increase)
+            <div className='btn' onClick={() => this.updateSkittles('purple', this.state.skittles.purple + 1)}>
+              (purple): {this.state.skittles.purple}
             </div>
-            <div className='score-panel--counter'>
-              {this.state.testCounter}
+            <div className='btn' onClick={() => this.updateSkittles('yellow', this.state.skittles.yellow + 1)}>
+              (yellow): {this.state.skittles.yellow}
+            </div>
+            <div className='btn' onClick={() => this.updateSkittles('green', this.state.skittles.green + 1)}>
+              (green): {this.state.skittles.green}
+            </div>
+            <div className='btn' onClick={() => this.updateSkittles('orange', this.state.skittles.orange + 1)}>
+              (orange): {this.state.skittles.orange}
+            </div>
+            <div className='btn' onClick={() => this.updateSkittles('red', this.state.skittles.red + 1)}>
+              (red): {this.state.skittles.red}
             </div>
           </div>
         </div>
