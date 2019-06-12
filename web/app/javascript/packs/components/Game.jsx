@@ -1,6 +1,8 @@
 import React from 'react'
 import ActionCable from 'actioncable'
 
+import PlayerList from './PlayerList'
+
 class Game extends React.Component {
   constructor () {
     super()
@@ -11,6 +13,7 @@ class Game extends React.Component {
 
     this.state = {
       gameData: {},
+      players: [],
       skittles: {
         purple: 0,
         yellow: 0,
@@ -35,11 +38,13 @@ class Game extends React.Component {
   handleReceiveNewData (gameData) {
     console.log(gameData)
     switch (gameData.action) {
-      case 'skittles_update': {
+      case 'player_update': {
+        this.setState({ players: gameData.players })
+
         // NOTE think about the security of this, and how you want it to work
-        if (gameData.player === this.state.pid) {
-          this.setState({ skittles: gameData.skittles })
-        }
+        let thisPlayer = gameData.players.find(player => player.pid === this.props.pid)
+        if (thisPlayer) this.setState({ skittles: thisPlayer.skittles })
+
         break
       }
       default: {
@@ -92,6 +97,7 @@ class Game extends React.Component {
             </div>
           </div>
         </div>
+        <PlayerList players={this.state.players}/>
       </div>
     )
   }

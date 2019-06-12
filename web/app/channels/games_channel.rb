@@ -3,23 +3,28 @@ class GamesChannel < ApplicationCable::Channel
     @game = Game.find(params[:id])
     reject unless @game.players.include?(current_or_guest_player)
     stream_for @game
+
+    update_players
   end
 
   def unsubscribed
     @game.players.delete(current_or_guest_player)
+    current_or_guest_player.leave_current_game
+
+    update_players
   end
 
   def update_skittles(data)
-    id_string = "game:#{@game.id}:#{current_or_guest_player.id}"
-    skittles = data['skittles']
+    current_or_guest_player.update_skittles data['skittles']
 
-    $redis.set(id_string, skittles.to_json)
+    @game.update_game_info
+  end
 
+  def update_players
     GamesChannel.broadcast_to(@game, {
       game_id: @game.id,
-      action: 'skittles_update',
-      skittles: JSON.parse($redis.get(id_string)),
-      player: current_or_guest_player.id
+      action: 'player_update',
+      players: @game.player_info
     })
   end
 

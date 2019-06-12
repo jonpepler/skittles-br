@@ -8,7 +8,12 @@ class GamesController < ApplicationController
     open_games = Game.matchmaking
 
     if(open_games.count == 0)
-      # In future use delayed job from init status
+      # In future
+      # Specific matchmaking groups
+      # Joining matchmaking puts you in a single player group
+      # Groups can combine
+      # Matchmaking service tries to merge groups to make X sized groups
+      # Creates a game when a group gets big enough
       g = Game.create(status: "matchmaking")
     else
       g = open_games.first

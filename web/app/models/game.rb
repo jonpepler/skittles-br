@@ -4,14 +4,21 @@ class Game < ApplicationRecord
 
   def add_player(player)
     self.players << player
-
-    update_matchmaking_status
+    update_game_info
   end
 
   def remove_player(player)
     self.players.delete(player)
     player.leave_current_game
 
+    update_game_info
+  end
+
+  def update_game_info
+    GamesChannel.broadcast_to(
+      self,
+      { game_id: self.id, action: 'player_update', players: player_info }
+    )
     update_matchmaking_status
   end
 
@@ -27,6 +34,14 @@ class Game < ApplicationRecord
         end
       end
     end
+  end
+
+  def player_info
+    player_info = []
+    self.players.each do |player|
+      player_info.push(player.info)
+    end
+    return player_info
   end
 
   def self.with_players
