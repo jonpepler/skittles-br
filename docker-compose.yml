@@ -24,3 +24,8 @@ services:
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - ./tmp/redis:/data
+  flag-generator:
+    build: ./flag-generator
+    command: ./flag-generator
+    ports:
+      - "3001:3001"
