@@ -28,4 +28,4 @@ services:
     build: ./flag-generator
     command: ./flag-generator
     ports:
-      - "3001:3001"
+      - "3002:3002"

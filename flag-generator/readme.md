@@ -3,7 +3,7 @@ make
 
 make run
 
-curl http://localhost:3001/random-flag
+curl http://localhost:3002/random-flag
 ```
 
 ## Install
@@ -33,7 +33,7 @@ You can ignore the warning: "go get: no install location for directory /home/vag
 Test it:
 
 ```
-curl http://localhost:3001/random-flag
+curl http://localhost:3002/random-flag
 ```
 
 or open the URL in your browser as the ports are forwarded.

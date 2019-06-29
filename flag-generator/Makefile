@@ -14,7 +14,7 @@ docker-build:
 	docker build -t ${CONTAINER_NAME}:${VERSION} .
 
 run:
-	docker run -p 3001:3001 --name ${CONTAINER_NAME} -d ${CONTAINER_NAME}:${VERSION}
+	docker run -p 3002:3002 --name ${CONTAINER_NAME} -d ${CONTAINER_NAME}:${VERSION}
 
 stop:
 	docker stop ${CONTAINER_NAME}
