@@ -9,6 +9,8 @@ import (
 	"github.com/gorilla/mux"
 
 	"./flagimage"
+
+	"math/rand"
 )
 
 func main() {
@@ -28,7 +30,7 @@ func test(responseWriter http.ResponseWriter, request *http.Request) {
 
 func generate_flag(responseWriter http.ResponseWriter, request *http.Request) {
 	log.Print("Making Flag")
-	flagimage.New(5, responseWriter)
+	flagimage.New(2 + rand.Intn(2), responseWriter)
 }
 
 // writeResult writes the value as JSON to the response. If the encoding fails 500 is returned with a message.

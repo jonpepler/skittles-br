@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/rand"
 	"math"
+	"time"
 )
 
 type Flag struct {
@@ -19,11 +20,23 @@ type coord struct {
 }
 
 var ratio = 1.5
-var flag_height = 500.0
-var grid_size = 50
+var flag_height = 500
+var grid_size = 100
 var anchor_points = generate_anchor_points()
+var cornerPoints = []coord{
+	coord{0, 0},
+	coord{get_flag_width(), 0},
+	coord{get_flag_width() / 2, 0},
+	coord{get_flag_width() / 2, get_flag_height()},
+	coord{0, get_flag_height()},
+	coord{0, get_flag_height() / 2},
+	coord{get_flag_width(), get_flag_height() / 2},
+	coord{get_flag_width(), get_flag_height()},
+}
 
 func New(layers int, responseWriter http.ResponseWriter) Flag {
+	rand.Seed(time.Now().UnixNano())
+
   f := Flag {layers}
  	responseWriter.Header().Set("Content-Type", "image/svg+xml")
 
@@ -39,7 +52,7 @@ func New(layers int, responseWriter http.ResponseWriter) Flag {
 	}
 
   s := svg.New(responseWriter)
-  s.Start(int(get_flag_width()), int(get_flag_height()))
+  s.Start(get_flag_width(), get_flag_height())
 
   add_background(s, colour_palette[0])
 
@@ -52,51 +65,74 @@ func New(layers int, responseWriter http.ResponseWriter) Flag {
   return f
 }
 
+// Make new type, banner
+// banners are same as rects, only guarrentee three points on edge of flag
+
 func add_random_layer(s *svg.SVG, colour colorful.Color) {
 	colour_string := colour.Hex()
 	layerFuncs := []func(){
-	    func() {
-	    	x, y := rand.Intn(int(get_flag_width())), rand.Intn(int(get_flag_height()))
-	    	r := rand.Intn(int(get_flag_height()) / 2)
+	    func() { // Full circles
+	    	x, y := rand.Intn(get_flag_width()), rand.Intn(get_flag_height())
+	    	r := rand.Intn(get_flag_height() / 2)
 	    	s.Ellipse(x, y, r, r, fmt.Sprintf("fill:%s;stroke:%s", colour_string, colour_string))
 	    },
-	    func() {
-	    	x, y := rand.Intn(int(get_flag_width())), rand.Intn(int(get_flag_height()))
-	    	r := rand.Intn(int(get_flag_height()) / 2)
-	    	s.Ellipse(x, y, r, r, fmt.Sprintf("fill:none;stroke:%s;stroke-width:10;", colour_string))
+	    func() { // Empty circles
+	    	x, y := rand.Intn(get_flag_width()), rand.Intn(get_flag_height())
+	    	r := rand.Intn(get_flag_height() / 2)
+	    	s.Ellipse(x, y, r, r, fmt.Sprintf("fill:none;stroke:%s;stroke-width:100;", colour_string))
 	    },
-	    func() {
-	    	a := anchor_points[rand.Intn(len(anchor_points))]
-	    	b := a.distance(anchor_points[rand.Intn(len(anchor_points))])
+	    func() { // Rectangles
+	    	a := randomCornerCoord()
+	    	b := a.distance(randomCornerCoord())
 	    	s.Rect(a.x, a.y, abs(b.x), abs(b.y), fmt.Sprintf("fill:%s;stroke:%s", colour_string, colour_string))
+	    },
+	    func() { // Triangles
+	    	var triangleCoords []coord
+	    	for len(triangleCoords) < 3 {
+	    		p := randomCornerCoord()
+	    		if !coordInArray(triangleCoords, p) {
+	    			triangleCoords = append(triangleCoords, p)
+	    		}
+	    	}
+
+	    	xarr, yarr := splitCoordArray(triangleCoords)
+	    	s.Polygon(xarr, yarr, fmt.Sprintf("fill:%s;stroke:%s", colour_string, colour_string))
 	    },
 	}
 	layerFuncs[rand.Intn(len(layerFuncs))]()
 }
 
 func add_background(s *svg.SVG, bg colorful.Color) {
-  s.Rect(0, 0, int(get_flag_width()), int(get_flag_height()), fmt.Sprintf("fill:%s", bg.Hex()))
+  s.Rect(0, 0, get_flag_width(), get_flag_height(), fmt.Sprintf("fill:%s", bg.Hex()))
 }
 
 func (f Flag) Layers() int {
 	return f.layers
 }
 
-func get_flag_height() float64 {
+func get_flag_height() int {
 	return flag_height
 }
 
-func get_flag_width() float64 {
-	return flag_height * ratio
+func get_flag_width() int {
+	return int(float64(flag_height) * ratio)
 }
 
 func generate_anchor_points() (ap []coord) {
-	for i := 0; i < int(get_flag_height()); i += grid_size {
-		for j := 0; j < int(get_flag_width()); j += grid_size {
+	for i := 0; i < get_flag_height(); i += grid_size {
+		for j := 0; j < get_flag_width(); j += grid_size {
 			ap = append(ap, coord{j, i})
 		}
 	}
 	return
+}
+
+func randomAnchorCoord() coord {
+	return anchor_points[rand.Intn(len(anchor_points))]
+}
+
+func randomCornerCoord() coord {
+	return cornerPoints[rand.Intn(len(cornerPoints))]
 }
 
 func (p1 coord) distance(p2 coord) (vector coord) {
@@ -104,6 +140,27 @@ func (p1 coord) distance(p2 coord) (vector coord) {
 	return
 }
 
+func (p coord) isEdgePoint() bool {
+	return (p.x == 0 || p.x == get_flag_width() || p.y == 0 || p.y == get_flag_height())
+}
+
 func abs(n int) int {
 	return int(math.Abs(float64(n)))
+}
+
+func splitCoordArray(arr []coord) (xarr []int, yarr []int) {
+	for _, v := range arr {
+		xarr = append(xarr, v.x)
+		yarr = append(yarr, v.y)
+	}
+	return
+}
+
+func coordInArray(arr []coord, p coord) bool {
+	for _, v := range arr {
+		if v == p {
+			return true
+		}
+	}
+	return false
 }
