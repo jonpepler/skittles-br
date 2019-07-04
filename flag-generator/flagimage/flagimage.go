@@ -33,6 +33,9 @@ var cornerPoints = []coord{
 	coord{get_flag_width(), get_flag_height() / 2},
 	coord{get_flag_width(), get_flag_height()},
 }
+var circleCoords = []coord{
+	coord{get_flag_width() / 2, get_flag_height() / 2},
+}
 
 func New(layers int, responseWriter http.ResponseWriter) Flag {
 	rand.Seed(time.Now().UnixNano())
@@ -72,26 +75,39 @@ func add_random_layer(s *svg.SVG, colour colorful.Color) {
 	colour_string := colour.Hex()
 	layerFuncs := []func(){
 	    func() { // Full circles
-	    	x, y := rand.Intn(get_flag_width()), rand.Intn(get_flag_height())
+	    	p := randomCircleCoord()
 	    	r := rand.Intn(get_flag_height() / 2)
-	    	s.Ellipse(x, y, r, r, fmt.Sprintf("fill:%s;stroke:%s", colour_string, colour_string))
+	    	s.Ellipse(p.x, p.y, r, r, fmt.Sprintf("fill:%s;stroke:%s", colour_string, colour_string))
 	    },
 	    func() { // Empty circles
-	    	x, y := rand.Intn(get_flag_width()), rand.Intn(get_flag_height())
+	    	p := randomCircleCoord()
 	    	r := rand.Intn(get_flag_height() / 2)
-	    	s.Ellipse(x, y, r, r, fmt.Sprintf("fill:none;stroke:%s;stroke-width:100;", colour_string))
+	    	s.Ellipse(p.x, p.y, r, r, fmt.Sprintf("fill:none;stroke:%s;stroke-width:100;", colour_string))
 	    },
 	    func() { // Rectangles
+// TODO Rects need a quarter in point
 	    	a := randomCornerCoord()
-	    	b := a.distance(randomCornerCoord())
-	    	s.Rect(a.x, a.y, abs(b.x), abs(b.y), fmt.Sprintf("fill:%s;stroke:%s", colour_string, colour_string))
+	    	b := randomCornerCoord()
+	    	if a.x == get_flag_width() {
+	    		a.x = 0
+	    	}
+	    	if a.y == get_flag_height() {
+	    		a.y = 0
+	    	}
+	    	for (a.x >= b.x || a.y >= b.y) || isFlagSizeRect(a, b) {
+	    		b = randomCornerCoord()
+	    	}
+	    	bVector := a.distance(b)
+	    	s.Rect(a.x, a.y, abs(bVector.x), abs(bVector.y), fmt.Sprintf("fill:%s;stroke:%s", colour_string, colour_string))
 	    },
 	    func() { // Triangles
 	    	var triangleCoords []coord
 	    	for len(triangleCoords) < 3 {
 	    		p := randomCornerCoord()
 	    		if !coordInArray(triangleCoords, p) {
-	    			triangleCoords = append(triangleCoords, p)
+	    			if (len(triangleCoords) != 2) || !pointsOnSameAxis(append(triangleCoords, p)...) {
+	    				triangleCoords = append(triangleCoords, p)
+	    			}
 	    		}
 	    	}
 
@@ -135,6 +151,10 @@ func randomCornerCoord() coord {
 	return cornerPoints[rand.Intn(len(cornerPoints))]
 }
 
+func randomCircleCoord() coord {
+	return circleCoords[rand.Intn(len(circleCoords))]
+}
+
 func (p1 coord) distance(p2 coord) (vector coord) {
 	vector = coord{p2.x - p1.x, p2.y - p1.y}
 	return
@@ -163,4 +183,40 @@ func coordInArray(arr []coord, p coord) bool {
 		}
 	}
 	return false
+}
+
+func pointsOnSameAxis(points ...coord) bool {
+	allEqual := func(arr []int) bool {
+		if len(arr) == 1 {
+			return true
+		}
+
+		var check int
+		for i, v := range arr {
+			if i != 1 && v != check {
+				return false
+			}
+			check = v
+		}
+		return true
+	}
+
+	var xarr []int
+	var yarr []int
+
+	for _, v := range points {
+		xarr = append(xarr, v.x)
+		yarr = append(yarr, v.y)
+	}
+
+	return allEqual(xarr) || allEqual(yarr)
+}
+
+func isFlagSizeRect(a coord, b coord) bool {
+	v := a.distance(b)
+	return v.x == get_flag_width() && v.y == get_flag_height()
+}
+
+func addCirclePoint(p coord) {
+	circleCoords = append(circleCoords, p)
 }
