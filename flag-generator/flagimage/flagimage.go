@@ -70,52 +70,66 @@ func New(layers int, responseWriter io.Writer) Flag {
 
 // Make new type, banner
 // banners are same as rects, only guarrentee three points on edge of flag
-
 func add_random_layer(s *svg.SVG, colour colorful.Color) {
 	colour_string := colour.Hex()
-	layerFuncs := []func(){
-	    func() { // Full circles
-	    	p := randomCircleCoord()
-	    	r := rand.Intn(get_flag_height() / 2)
-	    	s.Ellipse(p.x, p.y, r, r, fmt.Sprintf("fill:%s;stroke:%s", colour_string, colour_string))
-	    },
-	    func() { // Empty circles
-	    	p := randomCircleCoord()
-	    	r := rand.Intn(get_flag_height() / 2)
-	    	s.Ellipse(p.x, p.y, r, r, fmt.Sprintf("fill:none;stroke:%s;stroke-width:100;", colour_string))
-	    },
-	    func() { // Rectangles
-// TODO Rects need a quarter in point
-	    	a := randomCornerCoord()
-	    	b := randomCornerCoord()
-	    	if a.x == get_flag_width() {
-	    		a.x = 0
-	    	}
-	    	if a.y == get_flag_height() {
-	    		a.y = 0
-	    	}
-	    	for (a.x >= b.x || a.y >= b.y) || isFlagSizeRect(a, b) {
-	    		b = randomCornerCoord()
-	    	}
-	    	bVector := a.distance(b)
-	    	s.Rect(a.x, a.y, abs(bVector.x), abs(bVector.y), fmt.Sprintf("fill:%s;stroke:%s", colour_string, colour_string))
-	    },
-	    func() { // Triangles
-	    	var triangleCoords []coord
-	    	for len(triangleCoords) < 3 {
-	    		p := randomCornerCoord()
-	    		if !coordInArray(triangleCoords, p) {
-	    			if (len(triangleCoords) != 2) || !pointsOnSameAxis(append(triangleCoords, p)...) {
-	    				triangleCoords = append(triangleCoords, p)
-	    			}
-	    		}
-	    	}
-
-	    	xarr, yarr := splitCoordArray(triangleCoords)
-	    	s.Polygon(xarr, yarr, fmt.Sprintf("fill:%s;stroke:%s", colour_string, colour_string))
-	    },
+	layerFuncs := []func(*svg.SVG, string){
+			addFilledCircleLayer,
+			addEmptyCircleLayer,
+			addRectLayer,
+			addTriangleLayer,
 	}
-	layerFuncs[rand.Intn(len(layerFuncs))]()
+	layerFuncs[rand.Intn(len(layerFuncs))](s, colour_string)
+}
+
+func addFilledCircleLayer(s *svg.SVG, colour_string string) {
+	p := randomFeaturePoint()
+	r := rand.Intn(get_flag_height() / 2)
+	s.Ellipse(p.x, p.y, r, r, fmt.Sprintf("fill:%s;stroke:%s", colour_string, colour_string))
+
+}
+
+func addEmptyCircleLayer(s *svg.SVG, colour_string string) {
+	p := randomFeaturePoint()
+	r := rand.Intn(get_flag_height() / 2)
+	s.Ellipse(p.x, p.y, r, r, fmt.Sprintf("fill:none;stroke:%s;stroke-width:100;", colour_string))
+}
+
+func addRectLayer(s *svg.SVG, colour_string string) {
+	// TODO Rects need a quarter in point
+	a := randomCornerCoord()
+	b := randomCornerCoord()
+	if a.x == get_flag_width() {
+		a.x = 0
+	}
+	if a.y == get_flag_height() {
+		a.y = 0
+	}
+	for (a.x >= b.x || a.y >= b.y) || isFlagSizeRect(a, b) {
+		b = randomCornerCoord()
+	}
+	bVector := a.distance(b)
+
+	// addCirclePoint(generateCirclePointsFromRect(a, b))
+
+	s.Rect(a.x, a.y, abs(bVector.x), abs(bVector.y), fmt.Sprintf("fill:%s;stroke:%s", colour_string, colour_string))
+}
+
+func addTriangleLayer(s *svg.SVG, colour_string string) {
+	var triangleCoords []coord
+	for len(triangleCoords) < 3 {
+		p := randomCornerCoord()
+		if !coordInArray(triangleCoords, p) {
+			if (len(triangleCoords) != 2) || !pointsOnSameAxis(append(triangleCoords, p)...) {
+				triangleCoords = append(triangleCoords, p)
+			}
+		}
+	}
+
+	xarr, yarr := splitCoordArray(triangleCoords)
+
+	// addCirclePoint(generateCirclePointsFromTriangle(triangleCoords))
+
+	s.Polygon(xarr, yarr, fmt.Sprintf("fill:%s;stroke:%s", colour_string, colour_string))
 }
 
 func add_background(s *svg.SVG, bg colorful.Color) {
