@@ -33,7 +33,7 @@ var cornerPoints = []coord{
 	coord{get_flag_width(), get_flag_height() / 2},
 	coord{get_flag_width(), get_flag_height()},
 }
-var circleCoords = []coord{
+var featurePoints = []coord{
 	coord{get_flag_width() / 2, get_flag_height() / 2},
 }
 
@@ -151,8 +151,8 @@ func randomCornerCoord() coord {
 	return cornerPoints[rand.Intn(len(cornerPoints))]
 }
 
-func randomCircleCoord() coord {
-	return circleCoords[rand.Intn(len(circleCoords))]
+func randomFeaturePoint() coord {
+	return featurePoints[rand.Intn(len(featurePoints))]
 }
 
 func (p1 coord) distance(p2 coord) (vector coord) {
@@ -217,6 +217,6 @@ func isFlagSizeRect(a coord, b coord) bool {
 	return v.x == get_flag_width() && v.y == get_flag_height()
 }
 
-func addCirclePoint(p coord) {
-	circleCoords = append(circleCoords, p)
+func addFeaturePoint(points ...coord) {
+	featurePoints = append(featurePoints, points...)
 }
