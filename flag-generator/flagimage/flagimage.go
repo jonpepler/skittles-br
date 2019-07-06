@@ -3,7 +3,7 @@ package flagimage
 import (
 	"github.com/ajstarks/svgo"
 	"github.com/lucasb-eyer/go-colorful"
-	"net/http"
+	"io"
 	"fmt"
 	"math/rand"
 	"math"
@@ -37,11 +37,11 @@ var circleCoords = []coord{
 	coord{get_flag_width() / 2, get_flag_height() / 2},
 }
 
-func New(layers int, responseWriter http.ResponseWriter) Flag {
+// New writes a SVG flag image to the provided responseWriter.
+func New(layers int, responseWriter io.Writer) Flag {
 	rand.Seed(time.Now().UnixNano())
 
   f := Flag {layers}
- 	responseWriter.Header().Set("Content-Type", "image/svg+xml")
 
 	starter_colour_palette, err := colorful.HappyPalette(6)
 	if err != nil {

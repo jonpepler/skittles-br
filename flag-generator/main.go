@@ -30,6 +30,7 @@ func test(responseWriter http.ResponseWriter, request *http.Request) {
 
 func generate_flag(responseWriter http.ResponseWriter, request *http.Request) {
 	log.Print("Making Flag")
+ 	responseWriter.Header().Set("Content-Type", "image/svg+xml")
 	flagimage.New(2 + rand.Intn(2), responseWriter)
 }
 
