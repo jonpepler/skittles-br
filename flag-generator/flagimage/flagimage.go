@@ -118,7 +118,7 @@ func addRectLayer(s *svg.SVG, colour_string string) {
 	}
 	bVector := a.distance(b)
 
-	// addCirclePoint(generateCirclePointsFromRect(a, b))
+	addFeaturePoint(generateFeaturePointsFromRect(a, bVector)...)
 
 	s.Rect(a.x, a.y, abs(bVector.x), abs(bVector.y), fmt.Sprintf("fill:%s;stroke:%s", colour_string, colour_string))
 }
@@ -136,7 +136,7 @@ func addTriangleLayer(s *svg.SVG, colour_string string) {
 
 	xarr, yarr := splitCoordArray(triangleCoords)
 
-	// addCirclePoint(generateCirclePointsFromTriangle(triangleCoords))
+	addFeaturePoint(generateFeaturePointsFromTriangle(triangleCoords)...)
 
 	s.Polygon(xarr, yarr, fmt.Sprintf("fill:%s;stroke:%s", colour_string, colour_string))
 }
@@ -242,4 +242,29 @@ func isFlagSizeRect(a coord, b coord) bool {
 
 func addFeaturePoint(points ...coord) {
 	featurePoints = append(featurePoints, points...)
+}
+
+func generateFeaturePointsFromRect(point coord, size coord) (featurePoints []coord) {
+	featurePoints = append(featurePoints, coord{point.x + size.x / 2, point.y + size.y / 2})
+	return
+}
+
+func generateFeaturePointsFromTriangle(points []coord) (featurePoints []coord) {
+	featurePoints = append(featurePoints, midpoint(points...))
+	return
+}
+
+func midpoint(points ...coord) coord {
+	var x, y int
+
+	for _, v := range points {
+		x += v.x
+		y += v.y
+	}
+
+	count := len(points)
+	x /= count
+	y /= count
+
+	return coord{x,y}
 }
