@@ -27,14 +27,16 @@ var cornerPoints = []coord{
 	coord{get_flag_width(), 0},
 	coord{get_flag_width() / 2, 0},
 	coord{get_flag_width() / 2, get_flag_height()},
+	coord{get_flag_width() / 3, 0},
+	coord{get_flag_width() / 3, get_flag_height()},
+	coord{2 * get_flag_width() / 3, 0},
+	coord{2 * get_flag_width() / 3, get_flag_height()},
 	coord{0, get_flag_height()},
 	coord{0, get_flag_height() / 2},
 	coord{get_flag_width(), get_flag_height() / 2},
 	coord{get_flag_width(), get_flag_height()},
 }
-var featurePoints = []coord{
-	coord{get_flag_width() / 2, get_flag_height() / 2},
-}
+var featurePoints []coord
 
 // New writes a SVG flag image to the provided responseWriter.
 func New(seed int64, responseWriter io.Writer) Flag {
@@ -43,29 +45,36 @@ func New(seed int64, responseWriter io.Writer) Flag {
 
   f := Flag {layers}
 
-	starter_colour_palette, err := colorful.HappyPalette(6)
-	if err != nil {
-		fmt.Printf("Error generating happy palette: %v", err)
-	}
+	resetFeaturePoints()
 
-	var colour_palette [6]colorful.Color
-	for i, v := range starter_colour_palette {
-		h, s, _ := v.Hsv()
-		colour_palette[i] = colorful.Hsv(h, s, 100)
+	var colour_palette = [...]colorful.Color{
+		colorful.Color{0.807843137254902, 0.06666666666666667, 0.14901960784313725},
+		colorful.Color{0, 0.2, 0.3568627450980392},
+		colorful.Color{0.9882352941176471, 0.8196078431372549, 0.08627450980392157},
+		colorful.Color{0.06274509803921569, 0.5019607843137255, 0.25882352941176473},
+		colorful.Color{1, 0.5176470588235295, 0.18823529411764706},
+		colorful.Color{0.4588235294117647, 0.6666666666666666, 0.8588235294117647},
+		colorful.Color{0, 0, 0},
+		colorful.Color{1, 1, 1},
 	}
 
   s := svg.New(responseWriter)
   s.Start(get_flag_width(), get_flag_height())
 
-  add_background(s, colour_palette[0])
+  add_background(s, colour_palette[rand.Intn(len(colour_palette))])
 
   for i := 0; i < layers; i++ {
-  	colour := colour_palette[i + 1]
-  	add_random_layer(s, colour)
+  	add_random_layer(s, colour_palette[rand.Intn(len(colour_palette))])
   }
 
   s.End()
   return f
+}
+
+func resetFeaturePoints() {
+	featurePoints = []coord{
+		coord{get_flag_width() / 2, get_flag_height() / 2},
+	}
 }
 
 // Make new type, banner
