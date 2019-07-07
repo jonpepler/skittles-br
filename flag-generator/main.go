@@ -10,7 +10,7 @@ import (
 
 	"./flagimage"
 
-	"math/rand"
+	"time"
 )
 
 func main() {
@@ -31,7 +31,7 @@ func test(responseWriter http.ResponseWriter, request *http.Request) {
 func generate_flag(responseWriter http.ResponseWriter, request *http.Request) {
 	log.Print("Making Flag")
  	responseWriter.Header().Set("Content-Type", "image/svg+xml")
-	flagimage.New(2 + rand.Intn(2), responseWriter)
+	flagimage.New(time.Now().UnixNano(), responseWriter)
 }
 
 // writeResult writes the value as JSON to the response. If the encoding fails 500 is returned with a message.

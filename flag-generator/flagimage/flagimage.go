@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math/rand"
 	"math"
-	"time"
 )
 
 type Flag struct {
@@ -38,8 +37,9 @@ var featurePoints = []coord{
 }
 
 // New writes a SVG flag image to the provided responseWriter.
-func New(layers int, responseWriter io.Writer) Flag {
-	rand.Seed(time.Now().UnixNano())
+func New(seed int64, responseWriter io.Writer) Flag {
+	rand.Seed(seed)
+	layers := 2 + rand.Intn(2)
 
   f := Flag {layers}
 
