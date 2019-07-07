@@ -86,6 +86,7 @@ func add_random_layer(s *svg.SVG, colour colorful.Color) {
 			addEmptyCircleLayer,
 			addRectLayer,
 			addTriangleLayer,
+			addSymbolLayer,
 	}
 	layerFuncs[rand.Intn(len(layerFuncs))](s, colour_string)
 }
@@ -139,6 +140,51 @@ func addTriangleLayer(s *svg.SVG, colour_string string) {
 	addFeaturePoint(generateFeaturePointsFromTriangle(triangleCoords)...)
 
 	s.Polygon(xarr, yarr, fmt.Sprintf("fill:%s;stroke:%s", colour_string, colour_string))
+}
+
+func addSymbolLayer(s *svg.SVG, colour_string string) {
+	symbolFuncs := []func(*svg.SVG, string, coord, int){
+			addStarSymbol,
+	}
+	size := rand.Intn(get_flag_height() / 2 - 50) + 50
+	symbolFuncs[rand.Intn(len(symbolFuncs))](s, colour_string, randomFeaturePoint(), size)
+}
+
+func addStarSymbol(s *svg.SVG, colour_string string, p coord, size int) {
+	numberOfPoints := 5.0
+	numberOfVertices := numberOfPoints * 2.0
+	outerRadius := float64(size) / 2.0
+	innerRadius := outerRadius * 0.4
+	rotateOffset := -90.0
+	var path string
+
+	outer := true
+	for d := 0.0; d < 360.0; d += 360.0 / numberOfVertices {
+		if d == 0.0 {
+			path += fmt.Sprintf("M %f %f ", float64(p.x), float64(p.y) - outerRadius)
+		} else {
+			r := innerRadius
+			if outer {
+				r = outerRadius
+			}
+			x := float64(p.x) + math.Cos(degreesToRadians(d + rotateOffset)) * r;
+	    y := float64(p.y) + math.Sin(degreesToRadians(d + rotateOffset)) * r;
+
+	    path += fmt.Sprintf("L %f %f ", x, y)
+		}
+
+		outer = !outer
+	}
+
+	addPath(s, path, fmt.Sprintf("fill:%s", colour_string))
+}
+
+func degreesToRadians(degrees float64) float64 {
+	return degrees * math.Pi / 180
+}
+
+func addPath(s *svg.SVG, path string, style string) {
+	s.Path(path, style)
 }
 
 func add_background(s *svg.SVG, bg colorful.Color) {
