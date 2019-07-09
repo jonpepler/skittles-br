@@ -95,7 +95,6 @@ func addFilledCircleLayer(s *svg.SVG, colour_string string) {
 	p := randomFeaturePoint()
 	r := rand.Intn(get_flag_height() / 2)
 	s.Ellipse(p.x, p.y, r, r, fmt.Sprintf("fill:%s;stroke:%s", colour_string, colour_string))
-
 }
 
 func addEmptyCircleLayer(s *svg.SVG, colour_string string) {
@@ -145,9 +144,26 @@ func addTriangleLayer(s *svg.SVG, colour_string string) {
 func addSymbolLayer(s *svg.SVG, colour_string string) {
 	symbolFuncs := []func(*svg.SVG, string, coord, int){
 			addStarSymbol,
+			addSignalSymbol,
 	}
+
 	size := rand.Intn(get_flag_height() / 2 - 50) + 50
-	symbolFuncs[rand.Intn(len(symbolFuncs))](s, colour_string, randomFeaturePoint(), size)
+	p := randomFeaturePoint()
+
+	s.Gid(fmt.Sprintf("symbol_at_%d_%d", p.x, p.y))
+	symbolFuncs[rand.Intn(len(symbolFuncs))](s, colour_string, p, size)
+	s.Gend()
+}
+
+func addSignalSymbol(s *svg.SVG, colour_string string, p coord, size int) {
+	size64 := float64(size)
+
+	xRatio := 0.9705063291
+	path := fmt.Sprintf("M0, 0v1h-0.1700151082v-1h0.1700151082zm-0.436786782,1h0.1700151082v-0.801632968h-0.1700151082v0.801632968zm-0.2668681089,0h0.1700151082v-0.5325147064h-0.1700151082v0.5325147064zm-0.2668359639,0h0.1700151082v-0.3554598348h-0.1700151082v0.3554598348z")
+
+	s.Gtransform(fmt.Sprintf("translate(%f, %f) scale(%f)", float64(p.x) + (xRatio * size64)/2.0, float64(p.y) - size64/2.0, size64))
+	addPath(s, path, fmt.Sprintf("fill:%s", colour_string))
+	s.Gend()
 }
 
 func addStarSymbol(s *svg.SVG, colour_string string, p coord, size int) {
