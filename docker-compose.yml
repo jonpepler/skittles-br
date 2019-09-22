@@ -11,7 +11,7 @@ services:
     command: bash -c "rails db:migrate"
     command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails s -p 3000 -b '0.0.0.0'"
     volumes:
-      - ./web:/skittles-br
+      - ./web:/skittles-br:cached
     ports:
       - "3000:3000"
     depends_on:
@@ -19,6 +19,16 @@ services:
       - redis
     stdin_open: true
     tty: true
+  webpacker:
+    image: skittles-br_web
+    command: ["./webpack_dev.sh"]
+    volumes:
+      - ./web:/skittles-br:cached
+    ports:
+      - 3035:3035
+    depends_on:
+      - db
+      - web
   redis:
     image: redis
     command: ["redis-server", "--appendonly", "yes"]
