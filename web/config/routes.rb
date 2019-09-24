@@ -6,4 +6,6 @@ Rails.application.routes.draw do
 
   get '/game/find_or_create', to: 'games#find_or_create'
   get '/game/view', to: 'games#index'
+
+  get '/flag_path', to: 'players#flag_path'
 end

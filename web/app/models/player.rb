@@ -1,12 +1,20 @@
+require 'open-uri'
 class Player < ApplicationRecord
   devise :database_authenticatable, :rememberable
   belongs_to :game, optional: true
+  has_one_attached :flag
 
   def leave_current_game
     game_id = self.game
     self.game = nil
+    self.flag.purge
     self.save
     return game_id
+  end
+
+  def get_flag
+    flag_image = open("http://flag-generator:3002/random-flag")
+    self.flag.attach(io: flag_image, filename: "flag.svg", content_type: "image/svg+xml")
   end
 
   def update_skittles(skittles)
