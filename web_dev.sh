@@ -6,5 +6,8 @@ function cleanup {
 }
 trap cleanup EXIT
 
-docker-compose up -d
-docker attach skittles-br_web_1
+docker-compose up
+
+# docker-compose up -d
+# docker attach skittles-br_web_1
+
