@@ -17,9 +17,13 @@ class GamesController < ApplicationController
     else
       g = open_games.first
     end
+
     p = current_or_guest_player
-    p.leave_current_game unless p.game.nil?
-    g.add_player p
+
+    if p.game != g
+      p.leave_current_game unless p.game.nil?
+      g.add_player p
+    end
     render json: { id: g.id, pid: p.id }
   end
 end
