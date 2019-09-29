@@ -24,7 +24,7 @@ class Player < ApplicationRecord
   end
 
   def get_skittles
-    JSON.parse($redis.get("game:#{self.game.id}:#{self.id}") || '{"purple": 0, "yellow": 0, "green": 0, "orange": 0}')
+    JSON.parse($redis.get("game:#{self.game.id}:#{self.id}") || '{"purple": 0, "yellow": 0, "green": 0, "orange": 0, "red": 0}')
   end
 
   def info
