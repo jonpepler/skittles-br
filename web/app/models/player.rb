@@ -1,4 +1,5 @@
 require 'open-uri'
+include Rails.application.routes.url_helpers
 class Player < ApplicationRecord
   devise :database_authenticatable, :rememberable
   belongs_to :game, optional: true
@@ -27,10 +28,13 @@ class Player < ApplicationRecord
   end
 
   def info
+    flag = nil
+    flag = rails_blob_path(self.flag, only_path: true) if self.flag.attached?
     {
       name: self.email, # Generate a fake name + ID!
       pid: self.id,
-      skittles: self.get_skittles
+      skittles: self.get_skittles,
+      flag: flag
     }
   end
 end

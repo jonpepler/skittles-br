@@ -24,6 +24,10 @@ class GamesController < ApplicationController
       p.leave_current_game unless p.game.nil?
       g.add_player p
     end
+
+    if !p.flag.attached?
+      p.get_flag
+    end
     render json: { id: g.id, pid: p.id }
   end
 end

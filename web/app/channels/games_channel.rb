@@ -23,6 +23,7 @@ class GamesChannel < ApplicationCable::Channel
   end
 
   def update_players
+    # convert flag data to image url
     GamesChannel.broadcast_to(@game, {
       game_id: @game.id,
       action: 'player_update',

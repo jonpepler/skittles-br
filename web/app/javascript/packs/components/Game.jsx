@@ -9,6 +9,7 @@ class Game extends React.Component {
 
     this.establishActionCable = this.establishActionCable.bind(this)
     this.handleReceiveNewData = this.handleReceiveNewData.bind(this)
+    this.getFlag = this.getFlag.bind(this)
     this.updateSkittles = this.updateSkittles.bind(this)
 
     this.state = {
@@ -22,6 +23,8 @@ class Game extends React.Component {
         red: 0
       }
     }
+
+    this.getFlag()
   }
 
   componentDidMount () {
@@ -35,6 +38,20 @@ class Game extends React.Component {
     })
   }
 
+  getFlag () {
+    fetch('/flag_path', {
+      method: 'GET',
+      headers: {
+        'X-CSRF-Token': document.querySelector('meta[name=csrf-token]').content
+      },
+      credentials: 'same-origin'
+    }).then(response => {
+      response.text().then(url => {
+        this.setState({ flagPath: url })
+      })
+    })
+  }
+
   handleReceiveNewData (gameData) {
     console.log(gameData)
     switch (gameData.action) {
@@ -44,6 +61,7 @@ class Game extends React.Component {
         // NOTE think about the security of this, and how you want it to work
         let thisPlayer = gameData.players.find(player => player.pid === this.props.pid)
         if (thisPlayer) this.setState({ skittles: thisPlayer.skittles })
+        if (thisPlayer) this.setState({ flagPath: thisPlayer.flag })
 
         break
       }

@@ -15,6 +15,7 @@ class PlayerList extends React.Component {
 
       players.push(
         <div key={player.pid}>
+          <img src={player.flag} alt="flag" className="flag__image" />
           <div>
             {player.name}
           </div>
