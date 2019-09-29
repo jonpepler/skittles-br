@@ -18,6 +18,12 @@ class Player < ApplicationRecord
     self.flag.attach(io: flag_image, filename: "flag.svg", content_type: "image/svg+xml")
   end
 
+  def get_civ_name
+    civs = ["Republic of Amora", "Dawn Syndicate", "South Dreamland"]
+    self.civ_name = civs.sample
+    self.save
+  end
+
   def update_skittles(skittles)
     id_string = "game:#{self.game.id}:#{self.id}"
     $redis.set(id_string, skittles.to_json)
@@ -31,10 +37,10 @@ class Player < ApplicationRecord
     flag = nil
     flag = rails_blob_path(self.flag, only_path: true) if self.flag.attached?
     {
-      name: self.email, # Generate a fake name + ID!
+      name: self.civ_name,
       pid: self.id,
       skittles: self.get_skittles,
-      flag: flag
+      flag: flag,
     }
   end
 end

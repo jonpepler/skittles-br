@@ -28,6 +28,11 @@ class GamesController < ApplicationController
     if !p.flag.attached?
       p.get_flag
     end
+
+    if p.civ_name.blank?
+      p.get_civ_name
+    end
+
     render json: { id: g.id, pid: p.id }
   end
 end
