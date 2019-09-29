@@ -9,11 +9,10 @@ class GamesController < ApplicationController
 
     if(open_games.count == 0)
       # In future
-      # Specific matchmaking groups
-      # Joining matchmaking puts you in a single player group
-      # Groups can combine
-      # Matchmaking service tries to merge groups to make X sized groups
-      # Creates a game when a group gets big enough
+      # Matchmaking queue
+      # Web sends pids to the matchmaking service
+      # Matchmaking service cuts queue into groups of 12
+      # ...and sends the player info back to web
       g = Game.create(status: "matchmaking")
     else
       g = open_games.first
