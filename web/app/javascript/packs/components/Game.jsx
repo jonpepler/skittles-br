@@ -1,5 +1,5 @@
 import React from 'react'
-import ActionCable from 'actioncable'
+import { createConsumer } from '@rails/actioncable'
 
 import PlayerList from './PlayerList'
 
@@ -32,7 +32,7 @@ class Game extends React.Component {
   }
 
   establishActionCable () {
-    const cable = ActionCable.createConsumer('/cable')
+    const cable = createConsumer('/cable')
     this.sub = cable.subscriptions.create({ channel: 'GamesChannel', id: this.props.id }, {
       received: this.handleReceiveNewData
     })
