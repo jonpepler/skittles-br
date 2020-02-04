@@ -19,6 +19,7 @@ class GamesChannel < ApplicationCable::Channel
   def update_skittles(data)
     current_or_guest_player.update_skittles data['skittles']
 
+    @game.reload
     @game.update_game_info
   end
 
