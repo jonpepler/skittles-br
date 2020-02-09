@@ -19,8 +19,8 @@ class Player < ApplicationRecord
   end
 
   def get_civ_name
-    civs = ["Republic of Amora", "Dawn Syndicate", "South Dreamland"]
-    self.civ_name = civs.sample
+    name_result = open("http://name-generator:3003/random-name")
+    self.civ_name = name_result.string
     self.save
   end
 

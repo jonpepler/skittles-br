@@ -1,4 +1,4 @@
-version: '3'
+version: '3.7'
 services:
   db:
     image: postgres
@@ -39,3 +39,11 @@ services:
     command: ./flag-generator
     ports:
       - "3002:3002"
+  name-generator:
+    build: 
+      context: ./name-generator
+      target: development
+    volumes:
+      - ./name-generator:/src:cached
+    ports:
+      - "3003:3003"
