@@ -1,14 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"encoding/json"
 
 	"github.com/gorilla/mux"
 
-	"./flagimage"
+	"github.com/jonpepler/skittles-br/flag-generator/flagimage"
 
 	"time"
 )
@@ -30,7 +30,7 @@ func test(responseWriter http.ResponseWriter, request *http.Request) {
 
 func generate_flag(responseWriter http.ResponseWriter, request *http.Request) {
 	log.Print("Making Flag")
- 	responseWriter.Header().Set("Content-Type", "image/svg+xml")
+	responseWriter.Header().Set("Content-Type", "image/svg+xml")
 	flagimage.New(time.Now().UnixNano(), responseWriter)
 }
 

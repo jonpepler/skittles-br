@@ -1,0 +1,6 @@
+github.com/ajstarks/svgo v0.0.0-20200204031535-0cbcf57ea1d8 h1:LMjxfr9tcHP10YI+i4+cjHWSjPeUAUy5+sqw5FhFzwE=
+github.com/ajstarks/svgo v0.0.0-20200204031535-0cbcf57ea1d8/go.mod h1:K08gAheRH3/J6wwsYMMT4xOr94bZjxIelGM0+d/wbFw=
+github.com/gorilla/mux v1.7.3 h1:gnP5JzjVOuiZD07fKKToCAOjS0yOpj/qPETTXCCS6hw=
+github.com/gorilla/mux v1.7.3/go.mod h1:1lud6UwP+6orDFRuTfBEV8e9/aOM/c4fVVCaMa2zaAs=
+github.com/lucasb-eyer/go-colorful v1.0.3 h1:QIbQXiugsb+q10B+MI+7DI1oQLdmnep86tWFlaaUAac=
+github.com/lucasb-eyer/go-colorful v1.0.3/go.mod h1:R4dSotOR9KMtayYi1e77YzuveK+i7ruzyGqttikkLy0=

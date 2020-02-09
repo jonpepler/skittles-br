@@ -1,4 +1,8 @@
-FROM alpine:3.7
-COPY flag-generator /
+FROM golang:latest AS builder
+WORKDIR /app
+COPY . .
+RUN make dependencies build
 
-CMD ["/flag-generator"]
+FROM alpine:latest  
+COPY --from=builder /app/flag-generator .
+CMD ["./flag-generator"]

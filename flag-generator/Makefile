@@ -4,8 +4,7 @@ VERSION=1.0
 all: dependencies build docker-build
 
 dependencies:
-# 	Ignore installation directory error
-	go get ; true
+	go get
 
 build:
 	CGO_ENABLED=0 GOOS=linux go build -o ${CONTAINER_NAME} -a -ldflags '-extldflags "-static"' .
