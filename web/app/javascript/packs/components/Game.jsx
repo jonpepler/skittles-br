@@ -8,6 +8,7 @@ class Game extends React.Component {
     super()
 
     this.establishActionCable = this.establishActionCable.bind(this)
+    this.quit = this.quit.bind(this)
     this.handleReceiveNewData = this.handleReceiveNewData.bind(this)
     this.getFlag = this.getFlag.bind(this)
     this.updateSkittles = this.updateSkittles.bind(this)
@@ -32,10 +33,16 @@ class Game extends React.Component {
   }
 
   establishActionCable () {
-    const cable = createConsumer('/cable')
-    this.sub = cable.subscriptions.create({ channel: 'GamesChannel', id: this.props.id }, {
+    this.cable = createConsumer('/cable')
+    this.sub = this.cable.subscriptions.create({ channel: 'GamesChannel', id: this.props.id }, {
       received: this.handleReceiveNewData
     })
+  }
+
+  quit () {
+    this.sub.perform('quit')
+    this.cable.subscriptions.consumer.disconnect()
+    this.props.leaveGame()
   }
 
   getFlag () {

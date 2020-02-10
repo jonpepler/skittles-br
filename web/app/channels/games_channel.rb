@@ -8,12 +8,14 @@ class GamesChannel < ApplicationCable::Channel
   end
 
   def unsubscribed
-    # Set player to inactive?
+    @game.players.delete(current_or_guest_player)
+    current_or_guest_player.leave_current_game
 
-    # @game.players.delete(current_or_guest_player)
-    # current_or_guest_player.leave_current_game
+    update_players
+  end
 
-    # update_players
+  def quit
+    unsubscribed
   end
 
   def update_skittles(data)

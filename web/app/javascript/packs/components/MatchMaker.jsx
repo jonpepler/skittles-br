@@ -8,6 +8,7 @@ class MatchMaker extends React.Component {
 
     this.newGame = this.newGame.bind(this)
     this.gameReady = this.gameReady.bind(this)
+    this.leaveGame = this.leaveGame.bind(this)
 
     this.state = {
       gameFound: false
@@ -28,11 +29,19 @@ class MatchMaker extends React.Component {
     return this.state.gameFound && this.state.data.id
   }
 
+  leaveGame () {
+    this.setState({ gameFound: false, data: undefined })
+  }
+
   render () {
     if (this.gameReady()) {
       return (
         <div>
-          <Game id={this.state.data.id} pid={this.state.data.pid} />
+          <Game
+            id={this.state.data.id}
+            pid={this.state.data.pid}
+            leaveGame={this.leaveGame}
+          />
         </div>
       )
     } else {
