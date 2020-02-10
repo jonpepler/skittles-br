@@ -103,23 +103,24 @@ class Game extends React.Component {
         <div>
           Wow! You're in a game: {this.state.gameID}
         </div>
+        <button className="btn" onClick={this.quit}>Quit Game</button>
         <div>
           <div className='score-panel'>
-            <div className='btn' onClick={() => this.updateSkittles('purple', this.state.skittles.purple + 1)}>
+            <button className='btn' onClick={() => this.updateSkittles('purple', this.state.skittles.purple + 1)}>
               (purple): {this.state.skittles.purple}
-            </div>
-            <div className='btn' onClick={() => this.updateSkittles('yellow', this.state.skittles.yellow + 1)}>
+            </button>
+            <button className='btn' onClick={() => this.updateSkittles('yellow', this.state.skittles.yellow + 1)}>
               (yellow): {this.state.skittles.yellow}
-            </div>
-            <div className='btn' onClick={() => this.updateSkittles('green', this.state.skittles.green + 1)}>
+            </button>
+            <button className='btn' onClick={() => this.updateSkittles('green', this.state.skittles.green + 1)}>
               (green): {this.state.skittles.green}
-            </div>
-            <div className='btn' onClick={() => this.updateSkittles('orange', this.state.skittles.orange + 1)}>
+            </button>
+            <button className='btn' onClick={() => this.updateSkittles('orange', this.state.skittles.orange + 1)}>
               (orange): {this.state.skittles.orange}
-            </div>
-            <div className='btn' onClick={() => this.updateSkittles('red', this.state.skittles.red + 1)}>
+            </button>
+            <button className='btn' onClick={() => this.updateSkittles('red', this.state.skittles.red + 1)}>
               (red): {this.state.skittles.red}
-            </div>
+            </button>
           </div>
         </div>
         <PlayerList players={this.state.players}/>

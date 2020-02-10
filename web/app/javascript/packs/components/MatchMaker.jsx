@@ -45,7 +45,7 @@ class MatchMaker extends React.Component {
         </div>
       )
     } else {
-      return (<div className='btn btn--large' onClick={this.newGame}>New Game</div>)
+      return (<button className='btn btn--large' onClick={this.newGame}>New Game</button>)
     }
   }
 }
