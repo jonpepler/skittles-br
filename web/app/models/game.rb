@@ -3,6 +3,7 @@ class Game < ApplicationRecord
   enum status: { init: 0, matchmaking: 1, starting: 2, active: 3, complete: 4 }
 
   MIN_PLAYER_COUNT = 2
+  ACTIVATING_TIME = 5
 
   def add_player(player)
     self.players << player
@@ -25,15 +26,16 @@ class Game < ApplicationRecord
   end
 
   def check_matchmaking_status
+    player_count = self.players.count
     if(self.status == "matchmaking")
-      player_count = self.players.count
-      if(player_count == 0)
-        self.status = "complete"
-      else
-        if(player_count == MIN_PLAYER_COUNT)
-          MakeGamesActiveJob.set(wait: 5.seconds).perform_later(self)
-        end
+      if(player_count == MIN_PLAYER_COUNT)
+        self.reload
+        StartGameJob.set(wait: 1.second).perform_later(self)
+        ActivateGameJob.set(wait: ACTIVATING_TIME.seconds).perform_later(self)
       end
+    end
+    if player_count == 0
+      CompleteGameJob.set(wait: 1.second).perform_later(self)
     end
   end
 
@@ -46,6 +48,7 @@ class Game < ApplicationRecord
 
   def player_info
     player_info = []
+    self.reload
     self.players.each do |player|
       player_info.push(player.info)
     end

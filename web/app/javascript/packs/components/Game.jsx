@@ -89,7 +89,7 @@ class Game extends React.Component {
   }
 
   handleGameStateChange (gameData) {
-    this.setState({ gameState: gameData.status})
+    this.setState({ gameState: gameData.status })
   }
 
   /*
