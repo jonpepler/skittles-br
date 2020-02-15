@@ -10,6 +10,8 @@ class Game extends React.Component {
     this.establishActionCable = this.establishActionCable.bind(this)
     this.quit = this.quit.bind(this)
     this.handleReceiveNewData = this.handleReceiveNewData.bind(this)
+    this.handlePlayerUpdate = this.handlePlayerUpdate.bind(this)
+    this.handleGameStateChange = this.handleGameStateChange.bind(this)
     this.getFlag = this.getFlag.bind(this)
     this.updateSkittles = this.updateSkittles.bind(this)
 
@@ -63,13 +65,11 @@ class Game extends React.Component {
     console.log(gameData)
     switch (gameData.action) {
       case 'player_update': {
-        this.setState({ players: gameData.players })
-
-        // NOTE think about the security of this, and how you want it to work
-        let thisPlayer = gameData.players.find(player => player.pid === this.props.pid)
-        if (thisPlayer) this.setState({ skittles: thisPlayer.skittles })
-        if (thisPlayer) this.setState({ flagPath: thisPlayer.flag })
-
+        this.handlePlayerUpdate(gameData)
+        break
+      }
+      case 'game_state_change': {
+        this.handleGameStateChange(gameData)
         break
       }
       default: {
@@ -77,6 +77,19 @@ class Game extends React.Component {
         this.setState({ gameID: gameData.id })
       }
     }
+  }
+
+  handlePlayerUpdate (gameData) {
+    this.setState({ players: gameData.players })
+
+    // NOTE think about the security of this, and how you want it to work
+    let thisPlayer = gameData.players.find(player => player.pid === this.props.pid)
+    if (thisPlayer) this.setState({ skittles: thisPlayer.skittles })
+    if (thisPlayer) this.setState({ flagPath: thisPlayer.flag })
+  }
+
+  handleGameStateChange (gameData) {
+    this.setState({ gameState: gameData.status})
   }
 
   /*
@@ -101,7 +114,7 @@ class Game extends React.Component {
     return (
       <div>
         <div>
-          Wow! You're in a game: {this.state.gameID}
+          Game: {this.state.gameID} ({this.state.gameState})
         </div>
         <button className="btn" onClick={this.quit}>Quit Game</button>
         <div>
