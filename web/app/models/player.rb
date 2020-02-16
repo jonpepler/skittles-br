@@ -7,9 +7,7 @@ class Player < ApplicationRecord
 
   def leave_current_game
     game_id = self.game
-    self.game = nil
-    self.flag.purge
-    self.save
+    clear_data
     return game_id
   end
 
@@ -22,6 +20,25 @@ class Player < ApplicationRecord
     name_result = open("http://name-generator:3003/random-name")
     self.civ_name = name_result.string
     self.save
+  end
+
+  def clear_data
+    clear_game
+    clear_flag
+    clear_civ_name
+    self.save
+  end
+
+  def clear_game
+    self.game = nil
+  end
+
+  def clear_flag
+    self.flag.purge
+  end
+
+  def clear_civ_name
+    self.civ_name = nil
   end
 
   def update_skittles(skittles)
