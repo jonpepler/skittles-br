@@ -1,35 +1,21 @@
 import React from 'react'
 
-class PlayerList extends React.Component {
-  render () {
-    let players = []
-    this.props.players.forEach(player => {
-      let skittles = []
-      Object.keys(player.skittles).forEach(skittleKey => {
-        skittles.push(
-          <div key={skittleKey}>
-            {skittleKey}: {player.skittles[skittleKey]}
-          </div>
-        )
-      })
+import PlayerCard from './PlayerCard.jsx'
 
-      players.push(
-        <div key={player.pid}>
-          <img src={player.flag} alt="flag" className="flag__image" />
-          <div>
-            {player.name}
-          </div>
-          <div>
-            {skittles}
-          </div>
-        </div>
-      )
-    })
-    return (
-      <div>
-        {players}
-      </div>
-    )
-  }
+import '../../src/player/list'
+
+export default function PlayerList(props) {
+  const players = props.players.map(player => {
+    return (<PlayerCard
+      key={player.pid}
+      name={player.name}
+      flag={player.flag}
+      skittles={player.skittles}
+    />)
+  })
+  return (
+    <div className="player-list">
+      {players}
+    </div>
+  )
 }
-export default PlayerList
