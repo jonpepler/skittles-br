@@ -22,6 +22,11 @@ class Player < ApplicationRecord
     self.save
   end
 
+  def skittles
+    return self.game.get_skittles(self) unless self.game.nil?
+    nil
+  end
+
   def clear_data
     clear_game
     clear_flag
@@ -41,22 +46,13 @@ class Player < ApplicationRecord
     self.civ_name = nil
   end
 
-  def update_skittles(skittles)
-    id_string = "game:#{self.game.id}:#{self.id}"
-    $redis.set(id_string, skittles.to_json)
-  end
-
-  def get_skittles
-    JSON.parse($redis.get("game:#{self.game.id}:#{self.id}") || '{"purple": 0, "yellow": 0, "green": 0, "orange": 0, "red": 0}')
-  end
-
   def info
     flag = nil
     flag = rails_blob_path(self.flag, only_path: true) if self.flag.attached?
     {
       name: self.civ_name,
       pid: self.id,
-      skittles: self.get_skittles,
+      skittles: skittles,
       flag: flag,
     }
   end

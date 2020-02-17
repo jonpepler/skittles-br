@@ -15,8 +15,8 @@ class GamesChannel < ApplicationCable::Channel
     unsubscribed
   end
 
-  def update_skittles(data)
-    current_or_guest_player.update_skittles data['skittles']
+  def update_skittles data
+    @game.update_skittles current_or_guest_player, data['skittles']
 
     @game.reload
     @game.update_game_info

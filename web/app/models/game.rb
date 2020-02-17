@@ -55,6 +55,15 @@ class Game < ApplicationRecord
     return player_info
   end
 
+  def update_skittles player, skittles
+    id_string = "game:#{self.id}:#{player.id}"
+    $redis.set(id_string, skittles.to_json)
+  end
+
+  def get_skittles player
+    JSON.parse($redis.get("game:#{self.id}:#{player.id}") || '{"purple": 0, "yellow": 0, "green": 0, "orange": 0, "red": 0}')
+  end
+
   def self.with_players
     includes(:players).where.not(players: { id: nil })
   end
