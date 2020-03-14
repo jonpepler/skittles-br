@@ -1,4 +1,4 @@
-FROM ruby:2-alpine
+FROM ruby:2.7-alpine
 
 RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories \
   && apk update \
@@ -7,11 +7,12 @@ RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/reposit
     libc-dev linux-headers libxml2-dev libxslt-dev readline-dev gcc libc-dev \
   && rm -rf /var/cache/apk/*
 
-RUN mkdir /skittles-br
+RUN gem install bundler
 WORKDIR /skittles-br
-COPY . /skittles-br
+COPY Gemfile Gemfile.lock ./
 RUN bundle install
-RUN yarn install
+COPY . .
+RUN yarn install --check-files
 
 # Only precompile assets when not in development mode.
 RUN if [ "${RAILS_ENV}" != "development" ]; then rails assets:precompile; fi
