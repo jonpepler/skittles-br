@@ -47,7 +47,9 @@ services:
       target: development
     volumes:
       - ./name-generator:/src:cached
+      - ng_node_modules:/src/node_modules
     ports:
       - "3003:3003"
 volumes:
   node_modules:
+  ng_node_modules:
