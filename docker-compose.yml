@@ -25,6 +25,7 @@ services:
     command: ["./webpack_dev.sh"]
     volumes:
       - ./web:/skittles-br:cached
+      - node_modules:/skittles-br/node_modules
     ports:
       - 3035:3035
     depends_on:
