@@ -11,8 +11,9 @@ RUN gem install bundler
 WORKDIR /skittles-br
 COPY Gemfile Gemfile.lock ./
 RUN bundle install
-COPY . .
+COPY package.json yarn.lock ./
 RUN yarn install --check-files
+COPY . .
 
 # Only precompile assets when not in development mode.
 RUN if [ "${RAILS_ENV}" != "development" ]; then rails assets:precompile; fi

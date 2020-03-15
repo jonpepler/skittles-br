@@ -12,6 +12,7 @@ services:
     command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails s -p 3000 -b '0.0.0.0'"
     volumes:
       - ./web:/skittles-br:cached
+      - node_modules:/skittles-br/node_modules
     ports:
       - "3000:3000"
     depends_on:
@@ -47,3 +48,5 @@ services:
       - ./name-generator:/src:cached
     ports:
       - "3003:3003"
+volumes:
+  node_modules:
