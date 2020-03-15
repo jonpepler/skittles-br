@@ -41,3 +41,10 @@ class Event:
         Get the event in JSON format.
         """
         return json.dumps(self.data)
+    
+    @property
+    def dict(self):
+        """
+        Return the event as a Python dictionary.
+        """
+        return self.data
