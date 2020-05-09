@@ -6,4 +6,6 @@ WORKDIR /app
 
 COPY . .
 
+RUN pip install -r requirements.txt
+
 HEALTHCHECK --interval=5m --retries=5 CMD curl --fail http://localhost:${PORT}/ || exit 1
