@@ -2,6 +2,8 @@ import json
 import random
 import numpy as np
 
+from lorem import get_sentence
+
 # PARAMETERS
 # ----------
 # Change these to impact how the parameter passes to the event
@@ -100,8 +102,8 @@ class Event:
         skittle = lambda i: int(S(x[i], scale))
 
         return {
-            "name": f"Event with scale ({scale})",
-            "description": f"<long description> <the seed for this event was ({seed})>",
+            "name": get_sentence(word_range=(3,4), comma=(0, 0)),
+            "description": get_sentence(2, comma=(0, 1)),
             "requirement": { 
                 "red": skittle(0), "orange": skittle(1), 
                 "yellow": skittle(2), "purple": skittle(3),
