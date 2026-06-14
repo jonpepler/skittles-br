@@ -20,6 +20,7 @@ export interface GameRoomApi {
   canStart: boolean
   incrementSkittle: (colour: SkittleColour) => void
   start: () => void
+  triggerEvent: () => void
 }
 
 /**
@@ -145,14 +146,19 @@ export function useGameRoom(roomCode: string, role: Role): GameRoomApi {
     }
   }, [])
 
-  const start = useCallback(() => {
+  // Host-only actions the host applies locally; guests can't invoke these
+  // (the UI only exposes them to the host, and applyAction validates anyway).
+  const hostAction = useCallback((action: { type: 'start' | 'triggerEvent' }) => {
     const room = roomRef.current
     if (!room || !isHostRef.current || !stateRef.current || !selfIdRef.current) return
-    const next = applyAction(stateRef.current, selfIdRef.current, { type: 'start' })
+    const next = applyAction(stateRef.current, selfIdRef.current, action)
     stateRef.current = next
     setState(next)
     room.sendState(next)
   }, [])
+
+  const start = useCallback(() => hostAction({ type: 'start' }), [hostAction])
+  const triggerEvent = useCallback(() => hostAction({ type: 'triggerEvent' }), [hostAction])
 
   return {
     state,
@@ -161,6 +167,7 @@ export function useGameRoom(roomCode: string, role: Role): GameRoomApi {
     isHost,
     canStart: isHost && state ? canStartGame(state) : false,
     incrementSkittle,
-    start
+    start,
+    triggerEvent
   }
 }

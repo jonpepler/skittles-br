@@ -22,7 +22,14 @@ function lobbyWith(...ids: string[]) {
 describe('game state', () => {
   it('creates an empty lobby owned by the host', () => {
     const s = createGame(ROOM, 'host')
-    expect(s).toEqual({ roomCode: ROOM, hostId: 'host', phase: 'lobby', players: {} })
+    expect(s).toEqual({
+      roomCode: ROOM,
+      hostId: 'host',
+      phase: 'lobby',
+      players: {},
+      round: 0,
+      event: null
+    })
   })
 
   it('adds a player with a derived name and flag seed', () => {
@@ -97,13 +104,41 @@ describe('applyAction — authority and validation', () => {
     expect(next).toBe(active)
   })
 
-  it('reset returns to lobby and zeroes all skittles (host only)', () => {
+  it('reset returns to lobby, zeroes skittles and clears the event (host only)', () => {
     let s = applyAction(lobbyWith('host', 'p2'), 'host', { type: 'start' })
     s = applyAction(s, 'p2', { type: 'incrementSkittle', colour: 'yellow' })
+    s = applyAction(s, 'host', { type: 'triggerEvent' })
     expect(applyAction(s, 'p2', { type: 'reset' })).toBe(s) // guest can't reset
     const reset = applyAction(s, 'host', { type: 'reset' })
     expect(reset.phase).toBe('lobby')
     expect(reset.players['p2']!.skittles.yellow).toBe(0)
+    expect(reset.event).toBeNull()
+  })
+})
+
+describe('events', () => {
+  it('only the host may trigger an event, and only while active', () => {
+    const active = applyAction(lobbyWith('host', 'p2'), 'host', { type: 'start' })
+    expect(applyAction(active, 'p2', { type: 'triggerEvent' }).event).toBeNull()
+    expect(applyAction(lobbyWith('host', 'p2'), 'host', { type: 'triggerEvent' }).event).toBeNull()
+    const withEvent = applyAction(active, 'host', { type: 'triggerEvent' })
+    expect(withEvent.event).not.toBeNull()
+    expect(withEvent.round).toBe(1)
+  })
+
+  it('produces a deterministic event for a given room and round', () => {
+    const active = applyAction(lobbyWith('host', 'p2'), 'host', { type: 'start' })
+    const a = applyAction(active, 'host', { type: 'triggerEvent' }).event
+    const b = applyAction(active, 'host', { type: 'triggerEvent' }).event
+    expect(a).toEqual(b)
+  })
+
+  it('advances to a different event on the next round', () => {
+    const active = applyAction(lobbyWith('host', 'p2'), 'host', { type: 'start' })
+    const first = applyAction(active, 'host', { type: 'triggerEvent' })
+    const second = applyAction(first, 'host', { type: 'triggerEvent' })
+    expect(second.round).toBe(2)
+    expect(second.event).not.toEqual(first.event)
   })
 })
 

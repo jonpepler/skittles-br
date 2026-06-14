@@ -7,6 +7,7 @@
  * unit-testable and keeps the transport (Trystero) a thin adapter.
  */
 import { generateName } from '../generators/name.js'
+import { generateEvent } from '../generators/event.js'
 import { SKITTLE_COLOURS, type SkittleColour, type SkittleSet } from '../generators/event.js'
 import type { GameAction, GameState, PlayerState } from './types.js'
 
@@ -23,7 +24,7 @@ export function playerSeed(roomCode: string, id: string): string {
 }
 
 export function createGame(roomCode: string, hostId: string): GameState {
-  return { roomCode, hostId, phase: 'lobby', players: {} }
+  return { roomCode, hostId, phase: 'lobby', players: {}, round: 0, event: null }
 }
 
 /** Add a player (idempotent). Name + flag seed are derived from the room code. */
@@ -105,13 +106,21 @@ export function applyAction(
       if (!canStart(state)) return state
       return { ...state, phase: 'active' }
     }
+    case 'triggerEvent': {
+      if (senderId !== state.hostId) return state
+      if (state.phase !== 'active') return state
+      const round = state.round + 1
+      // Deterministic per (room, round); scaled by the number of players.
+      const event = generateEvent(playerCount(state), `${state.roomCode}:event:${round}`)
+      return { ...state, round, event }
+    }
     case 'reset': {
       if (senderId !== state.hostId) return state
       const players: Record<string, PlayerState> = {}
       for (const [id, p] of Object.entries(state.players)) {
         players[id] = { ...p, skittles: emptySkittles() }
       }
-      return { ...state, phase: 'lobby', players }
+      return { ...state, phase: 'lobby', players, event: null }
     }
     default:
       return state

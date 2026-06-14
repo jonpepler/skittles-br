@@ -29,12 +29,21 @@ app/
 
 ### Peer-to-peer model
 
-There is no game server. One peer — whoever creates the room — is the
+There is no game server. The connected peer with the lowest id is the
 **authoritative host**: it owns the game state, validates every action, and
 broadcasts the result. Guests render what they receive and route their actions
 back to the host. This is also the security model: a player can only *request*
 to collect a skittle (+1); the host validates it, so clients can't set
 arbitrary values (the gap flagged in the original Rails prototype).
+
+Authority fails over automatically: if the host disconnects, the next-lowest
+peer promotes itself and adopts the last broadcast state (preserving phase and
+skittles), so a single departure doesn't end the game.
+
+During the active phase the host can trigger **events** — generated
+deterministically per round by the bundled event generator — which carry a
+requirement, reward and penalty. Events are currently displayed to all players;
+how they resolve against a player's skittles is left as a game-design decision.
 
 The only thing that can't be fully static is **WebRTC signalling** — peers need
 a broker to find each other before connecting directly. That's handled by
@@ -50,7 +59,11 @@ npm run dev        # local dev server
 npm test           # vitest suite
 npm run typecheck  # tsc --noEmit
 npm run build      # production build into app/dist
+npm run test:e2e   # Playwright real-browser tests (run `npx playwright install chromium` first)
 ```
+
+The Playwright suite asserts the host flow in a real browser; its two-peer test
+needs WebRTC relay egress and self-skips where that's unavailable.
 
 To play locally across two browser windows, open the dev server twice: create a
 game in one (note the room code) and join with that code in the other.

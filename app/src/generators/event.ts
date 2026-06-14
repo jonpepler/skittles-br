@@ -38,7 +38,9 @@ export const SKITTLE_COLOURS = [
 export type SkittleColour = (typeof SKITTLE_COLOURS)[number]
 export type SkittleSet = Record<SkittleColour, number>
 
-export interface GameEvent {
+// A `type` (not `interface`) so it satisfies Trystero's JSON payload constraint
+// when carried inside the game state over the wire.
+export type GameEvent = {
   name: string
   description: string
   requirement: SkittleSet

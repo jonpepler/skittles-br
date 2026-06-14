@@ -70,6 +70,11 @@ describe('App end-to-end (fake transport)', () => {
     await user.click(screen.getByRole('button', { name: /green: 0/ }))
     expect(lastBroadcast().players['HOST']!.skittles.green).toBe(1)
     expect(screen.getByRole('button', { name: /green: 1/ })).toBeInTheDocument()
+
+    // Host triggers an event, which the generator produces and broadcasts.
+    await user.click(screen.getByRole('button', { name: 'Trigger event' }))
+    expect(screen.getByText('Event 1')).toBeInTheDocument()
+    expect(lastBroadcast().event).not.toBeNull()
   })
 
   it('validates guest actions through the host (ignores a non-player)', async () => {

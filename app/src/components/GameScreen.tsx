@@ -3,6 +3,7 @@ import type { Role } from '../game/types.js'
 import { MIN_PLAYERS } from '../game/state.js'
 import { PlayerCard } from './PlayerCard.js'
 import { SkittlePanel } from './SkittlePanel.js'
+import { EventPanel } from './EventPanel.js'
 
 export function GameScreen({
   roomCode,
@@ -56,6 +57,17 @@ export function GameScreen({
         <section>
           <h2>Collect skittles</h2>
           <SkittlePanel skittles={self.skittles} onIncrement={game.incrementSkittle} />
+
+          {state.event ? (
+            <EventPanel event={state.event} round={state.round} />
+          ) : (
+            <p className="game__hint">No event yet.</p>
+          )}
+          {game.isHost && (
+            <button className="btn" onClick={game.triggerEvent}>
+              {state.event ? 'Next event' : 'Trigger event'}
+            </button>
+          )}
         </section>
       )}
 

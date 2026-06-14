@@ -1,4 +1,4 @@
-import type { SkittleColour, SkittleSet } from '../generators/event.js'
+import type { GameEvent, SkittleColour, SkittleSet } from '../generators/event.js'
 
 /** Which side of the connection a client is playing. */
 export type Role = 'host' | 'guest'
@@ -25,6 +25,10 @@ export type GameState = {
   hostId: string
   phase: Phase
   players: Record<string, PlayerState>
+  /** Increments each time the host triggers an event (also seeds the event). */
+  round: number
+  /** The event currently in play, if any. */
+  event: GameEvent | null
 }
 
 /**
@@ -35,4 +39,5 @@ export type GameState = {
 export type GameAction =
   | { type: 'incrementSkittle'; colour: SkittleColour }
   | { type: 'start' }
+  | { type: 'triggerEvent' }
   | { type: 'reset' }
