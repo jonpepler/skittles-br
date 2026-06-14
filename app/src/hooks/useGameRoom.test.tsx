@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { act, render, screen } from '@testing-library/react'
+import { act, render, renderHook, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from '../App.js'
+import { useGameRoom } from './useGameRoom.js'
+import { addPlayer, createGame } from '../game/state.js'
 import type { GameState } from '../game/types.js'
 
 /**
@@ -95,5 +97,45 @@ describe('App end-to-end (fake transport)', () => {
       )
     )
     expect(lastBroadcast().players['GUEST']!.skittles.red).toBe(1)
+  })
+})
+
+describe('host migration', () => {
+  beforeEach(() => {
+    h.room.sentStates = []
+    h.room.sentActions = []
+    h.room.handlers = {}
+  })
+
+  const onState = (s: GameState, peerId: string) =>
+    (h.room.handlers.onState as (s: GameState, p: string) => void)(s, peerId)
+  const onPeerJoin = (peerId: string) =>
+    (h.room.handlers.onPeerJoin as (p: string) => void)(peerId)
+  const onPeerLeave = (peerId: string) =>
+    (h.room.handlers.onPeerLeave as (p: string) => void)(peerId)
+
+  it('promotes the lowest-id guest when the host leaves, keeping state', () => {
+    // self is 'HOST'; the actual host 'AAAA' sorts lower, so when it leaves the
+    // sole remaining peer (self) must take over.
+    const { result } = renderHook(() => useGameRoom('CODE', 'guest'))
+    expect(result.current.isHost).toBe(false)
+
+    let hosted = addPlayer(createGame('CODE', 'AAAA'), 'AAAA')
+    hosted = addPlayer(hosted, 'HOST')
+
+    act(() => onPeerJoin('AAAA'))
+    act(() => onState(hosted, 'AAAA'))
+    expect(result.current.state?.hostId).toBe('AAAA')
+    expect(result.current.isHost).toBe(false)
+
+    // The host disconnects.
+    act(() => onPeerLeave('AAAA'))
+
+    expect(result.current.isHost).toBe(true)
+    expect(result.current.state?.hostId).toBe('HOST')
+    expect(result.current.state?.players['AAAA']).toBeUndefined()
+    expect(result.current.state?.players['HOST']).toBeDefined()
+    // The new host announced itself.
+    expect(lastBroadcast().hostId).toBe('HOST')
   })
 })

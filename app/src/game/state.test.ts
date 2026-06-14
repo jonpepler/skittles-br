@@ -5,7 +5,9 @@ import {
   applyAction,
   canStart,
   createGame,
+  electHost,
   emptySkittles,
+  migrateHost,
   playerCount,
   playerSeed,
   removePlayer
@@ -102,5 +104,30 @@ describe('applyAction — authority and validation', () => {
     const reset = applyAction(s, 'host', { type: 'reset' })
     expect(reset.phase).toBe('lobby')
     expect(reset.players['p2']!.skittles.yellow).toBe(0)
+  })
+})
+
+describe('host election and migration', () => {
+  it('elects the lowest peer id', () => {
+    expect(electHost(['m', 'a', 'z'])).toBe('a')
+    expect(electHost(['solo'])).toBe('solo')
+    expect(electHost([])).toBeUndefined()
+  })
+
+  it('migrates authority to the new host and drops the departed one', () => {
+    const game = lobbyWith('aaa', 'mmm', 'zzz') // hostId defaults to 'aaa'
+    const next = migrateHost(game, 'mmm', 'aaa')
+    expect(next.hostId).toBe('mmm')
+    expect(next.players['aaa']).toBeUndefined()
+    expect(next.players['mmm']).toBeDefined()
+    expect(next.players['zzz']).toBeDefined()
+  })
+
+  it('preserves in-progress state (phase and skittles) across migration', () => {
+    let s = applyAction(lobbyWith('aaa', 'mmm'), 'aaa', { type: 'start' })
+    s = applyAction(s, 'mmm', { type: 'incrementSkittle', colour: 'purple' })
+    const migrated = migrateHost(s, 'mmm', 'aaa')
+    expect(migrated.phase).toBe('active')
+    expect(migrated.players['mmm']!.skittles.purple).toBe(1)
   })
 })

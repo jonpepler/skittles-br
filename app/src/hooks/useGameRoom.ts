@@ -5,6 +5,8 @@ import {
   applyAction,
   canStart as canStartGame,
   createGame,
+  electHost,
+  migrateHost,
   removePlayer
 } from '../game/state.js'
 import type { GameState, Role } from '../game/types.js'
@@ -21,98 +23,143 @@ export interface GameRoomApi {
 }
 
 /**
- * Join (or host) a game room and expose the live state plus the actions a
- * player can take. The host keeps the authoritative state in a ref, mutates it
- * through the pure reducer, and broadcasts every change; guests render whatever
- * the host sends and route their actions back to the host for validation.
+ * Join a game room and expose the live state plus the actions a player can
+ * take. Authority is dynamic: the connected peer with the lowest id is the
+ * host, so if the host leaves the next-lowest peer promotes itself and adopts
+ * the last broadcast state. Handlers therefore branch on the *current* host
+ * status rather than a fixed role; `role` only seeds who creates the initial
+ * lobby vs. who waits for it.
  */
 export function useGameRoom(roomCode: string, role: Role): GameRoomApi {
   const [state, setState] = useState<GameState | null>(null)
+  const [isHost, setIsHostState] = useState(role === 'host')
   const [connected, setConnected] = useState(false)
+
   const roomRef = useRef<GameRoom | null>(null)
-  const authRef = useRef<GameState | null>(null) // host's authoritative copy
   const selfIdRef = useRef<PeerId | null>(null)
+  const stateRef = useRef<GameState | null>(null) // authoritative if host, else last seen
+  const peersRef = useRef<Set<PeerId>>(new Set())
+  const isHostRef = useRef(role === 'host')
 
   useEffect(() => {
     const room = joinGameRoom(roomCode)
     roomRef.current = room
     selfIdRef.current = room.selfId
+    peersRef.current = new Set()
+
+    const setHost = (value: boolean): void => {
+      isHostRef.current = value
+      setIsHostState(value)
+    }
+    const commit = (next: GameState): void => {
+      stateRef.current = next
+      setState(next)
+    }
+    const broadcast = (): void => {
+      if (stateRef.current) room.sendState(stateRef.current)
+    }
+    /** A guest promotes itself if it's the lowest-id peer after the host left. */
+    const electAndMaybePromote = (departedHostId: PeerId): void => {
+      const remaining = [room.selfId, ...peersRef.current]
+      if (electHost(remaining) !== room.selfId) return // someone more senior promotes
+      if (!stateRef.current) return
+      setHost(true)
+      commit(migrateHost(stateRef.current, room.selfId, departedHostId))
+      broadcast()
+    }
 
     if (role === 'host') {
-      const commit = (next: GameState): void => {
-        authRef.current = next
-        setState(next)
-      }
-      const broadcast = (): void => {
-        if (authRef.current) room.sendState(authRef.current)
-      }
-
+      setHost(true)
       commit(addPlayer(createGame(roomCode, room.selfId), room.selfId))
-
-      room.setOnPeerJoin((peerId) => {
-        commit(addPlayer(authRef.current!, peerId))
-        broadcast()
-      })
-      room.setOnPeerLeave((peerId) => {
-        commit(removePlayer(authRef.current!, peerId))
-        broadcast()
-      })
-      room.setOnAction((action, peerId) => {
-        commit(applyAction(authRef.current!, peerId, action))
-        broadcast()
-      })
-      // A guest greeting us means they want the current state.
-      room.setOnHello(() => broadcast())
     } else {
-      room.setOnState((next) => setState(next))
-      // When the host appears, announce ourselves so it (re)sends state.
-      room.setOnPeerJoin(() => room.sendHello())
+      setHost(false)
     }
+
+    room.setOnState((incoming, peerId) => {
+      if (isHostRef.current) {
+        // Split-brain resolution: yield only to a more senior (lower id) host.
+        if (peerId < room.selfId) {
+          setHost(false)
+          commit(incoming)
+        }
+        return
+      }
+      commit(incoming)
+    })
+
+    room.setOnAction((action, peerId) => {
+      if (!isHostRef.current || !stateRef.current) return
+      commit(applyAction(stateRef.current, peerId, action))
+      broadcast()
+    })
+
+    room.setOnHello(() => {
+      if (isHostRef.current) broadcast()
+    })
+
+    room.setOnPeerJoin((peerId) => {
+      peersRef.current.add(peerId)
+      if (isHostRef.current && stateRef.current) {
+        commit(addPlayer(stateRef.current, peerId))
+        broadcast()
+      } else {
+        // Ask whoever is host to (re)send the current state.
+        room.sendHello()
+      }
+    })
+
+    room.setOnPeerLeave((peerId) => {
+      peersRef.current.delete(peerId)
+      if (isHostRef.current && stateRef.current) {
+        commit(removePlayer(stateRef.current, peerId))
+        broadcast()
+      } else if (stateRef.current?.hostId === peerId) {
+        electAndMaybePromote(peerId)
+      }
+    })
 
     setConnected(true)
 
     return () => {
       room.leave()
       roomRef.current = null
-      authRef.current = null
+      stateRef.current = null
+      peersRef.current = new Set()
       setConnected(false)
     }
   }, [roomCode, role])
 
-  const incrementSkittle = useCallback(
-    (colour: SkittleColour) => {
-      const room = roomRef.current
-      if (!room) return
-      if (role === 'host' && authRef.current && selfIdRef.current) {
-        const next = applyAction(authRef.current, selfIdRef.current, {
-          type: 'incrementSkittle',
-          colour
-        })
-        authRef.current = next
-        setState(next)
-        room.sendState(next)
-      } else {
-        room.sendAction({ type: 'incrementSkittle', colour })
-      }
-    },
-    [role]
-  )
+  const incrementSkittle = useCallback((colour: SkittleColour) => {
+    const room = roomRef.current
+    if (!room) return
+    if (isHostRef.current && stateRef.current && selfIdRef.current) {
+      const next = applyAction(stateRef.current, selfIdRef.current, {
+        type: 'incrementSkittle',
+        colour
+      })
+      stateRef.current = next
+      setState(next)
+      room.sendState(next)
+    } else {
+      room.sendAction({ type: 'incrementSkittle', colour })
+    }
+  }, [])
 
   const start = useCallback(() => {
     const room = roomRef.current
-    if (!room || role !== 'host' || !authRef.current || !selfIdRef.current) return
-    const next = applyAction(authRef.current, selfIdRef.current, { type: 'start' })
-    authRef.current = next
+    if (!room || !isHostRef.current || !stateRef.current || !selfIdRef.current) return
+    const next = applyAction(stateRef.current, selfIdRef.current, { type: 'start' })
+    stateRef.current = next
     setState(next)
     room.sendState(next)
-  }, [role])
+  }, [])
 
   return {
     state,
     selfId: selfIdRef.current,
     connected,
-    isHost: role === 'host',
-    canStart: state ? canStartGame(state) : false,
+    isHost,
+    canStart: isHost && state ? canStartGame(state) : false,
     incrementSkittle,
     start
   }

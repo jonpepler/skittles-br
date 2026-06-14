@@ -51,6 +51,28 @@ export function playerCount(state: GameState): number {
   return Object.keys(state.players).length
 }
 
+/**
+ * Deterministic host election: the connected peer with the lowest id wins.
+ * Every peer can compute this identically, so failover needs no coordination.
+ */
+export function electHost(connectedIds: string[]): string | undefined {
+  if (connectedIds.length === 0) return undefined
+  return [...connectedIds].sort()[0]
+}
+
+/**
+ * Hand authority to `newHostId` after the previous host left. The new host
+ * adopts the last-known state, drops the departed host, and stamps itself as
+ * host so the change propagates on its next broadcast.
+ */
+export function migrateHost(
+  state: GameState,
+  newHostId: string,
+  departedHostId: string
+): GameState {
+  return { ...removePlayer(state, departedHostId), hostId: newHostId }
+}
+
 /** Whether the host is allowed to start the game right now. */
 export function canStart(state: GameState): boolean {
   return state.phase === 'lobby' && playerCount(state) >= MIN_PLAYERS
