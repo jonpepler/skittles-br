@@ -1,0 +1,99 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { act, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import App from '../App.js'
+import type { GameState } from '../game/types.js'
+
+/**
+ * Drives the whole app (Landing → GameScreen → useGameRoom) against a fake
+ * Trystero room, so the host-authoritative wiring is exercised end-to-end
+ * without a browser or any network. Captures the handlers the hook registers
+ * and records every state broadcast.
+ */
+const h = vi.hoisted(() => {
+  const room: {
+    selfId: string
+    sentStates: GameState[]
+    sentActions: unknown[]
+    handlers: Record<string, (...args: never[]) => void>
+    [key: string]: unknown
+  } = { selfId: 'HOST', sentStates: [], sentActions: [], handlers: {} }
+
+  room.sendState = (s: GameState) => room.sentStates.push(s)
+  room.setOnState = (cb: never) => (room.handlers.onState = cb)
+  room.sendAction = (a: unknown) => room.sentActions.push(a)
+  room.setOnAction = (cb: never) => (room.handlers.onAction = cb)
+  room.sendHello = () => {}
+  room.setOnHello = (cb: never) => (room.handlers.onHello = cb)
+  room.setOnPeerJoin = (cb: never) => (room.handlers.onPeerJoin = cb)
+  room.setOnPeerLeave = (cb: never) => (room.handlers.onPeerLeave = cb)
+  room.leave = () => {}
+  return { room }
+})
+
+vi.mock('../net/room.js', () => ({ joinGameRoom: () => h.room }))
+
+const lastBroadcast = (): GameState => h.room.sentStates[h.room.sentStates.length - 1]!
+
+describe('App end-to-end (fake transport)', () => {
+  beforeEach(() => {
+    h.room.sentStates = []
+    h.room.sentActions = []
+    h.room.handlers = {}
+  })
+
+  it('hosts a game from create through to collecting a skittle', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    // Create a game as host.
+    await user.click(screen.getByRole('button', { name: 'Create game' }))
+
+    // Lobby with just the host, below the player minimum.
+    expect(screen.getByText(/Waiting for players \(1\/2\)/)).toBeInTheDocument()
+    expect(screen.getByText('(you)')).toBeInTheDocument()
+
+    // A guest connects — the host should admit them and be able to start.
+    act(() => h.room.handlers.onPeerJoin!('GUEST' as never))
+    const startBtn = await screen.findByRole('button', { name: 'Start game' })
+    expect(startBtn).toBeEnabled()
+    expect(lastBroadcast().players['GUEST']).toBeDefined()
+
+    // Start the game.
+    await user.click(startBtn)
+    expect(screen.getByRole('heading', { name: 'Collect skittles' })).toBeInTheDocument()
+    expect(lastBroadcast().phase).toBe('active')
+
+    // Collect a green skittle — host applies it and rebroadcasts.
+    await user.click(screen.getByRole('button', { name: /green: 0/ }))
+    expect(lastBroadcast().players['HOST']!.skittles.green).toBe(1)
+    expect(screen.getByRole('button', { name: /green: 1/ })).toBeInTheDocument()
+  })
+
+  it('validates guest actions through the host (ignores a non-player)', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(screen.getByRole('button', { name: 'Create game' }))
+    act(() => h.room.handlers.onPeerJoin!('GUEST' as never))
+    await user.click(await screen.findByRole('button', { name: 'Start game' }))
+
+    // A spoofed action from someone who never joined must not change state.
+    act(() =>
+      (h.room.handlers.onAction as (a: unknown, p: string) => void)!(
+        { type: 'incrementSkittle', colour: 'red' },
+        'INTRUDER'
+      )
+    )
+    const state = lastBroadcast()
+    expect(state.players['INTRUDER']).toBeUndefined()
+
+    // A legitimate action from the joined guest is applied.
+    act(() =>
+      (h.room.handlers.onAction as (a: unknown, p: string) => void)!(
+        { type: 'incrementSkittle', colour: 'red' },
+        'GUEST'
+      )
+    )
+    expect(lastBroadcast().players['GUEST']!.skittles.red).toBe(1)
+  })
+})
