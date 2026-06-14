@@ -1,0 +1,30 @@
+import { FlagImage } from './FlagImage.js'
+import { SKITTLE_COLOURS } from '../generators/event.js'
+import type { PlayerState } from '../game/types.js'
+
+export function PlayerCard({
+  player,
+  isSelf
+}: {
+  player: PlayerState
+  isSelf: boolean
+}) {
+  return (
+    <div className={`player-card${isSelf ? ' player-card--self' : ''}`}>
+      <FlagImage seed={player.flagSeed} className="player-card__flag" />
+      <div className="player-card__body">
+        <div className="player-card__name">
+          {player.name}
+          {isSelf && <span className="player-card__you"> (you)</span>}
+        </div>
+        <ul className="player-card__skittles">
+          {SKITTLE_COLOURS.map((colour) => (
+            <li key={colour} className={`skittle skittle--${colour}`}>
+              <span className="skittle__dot" /> {player.skittles[colour]}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  )
+}

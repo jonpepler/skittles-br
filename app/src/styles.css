@@ -1,0 +1,198 @@
+:root {
+  --red: #ce1126;
+  --orange: #ff8430;
+  --yellow: #fcd116;
+  --purple: #6b3fa0;
+  --green: #108042;
+  --bg: #0f1020;
+  --panel: #1b1d33;
+  --text: #f3f3fb;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+#root {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.btn {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid #353861;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.btn:hover:not(:disabled) {
+  border-color: #5a5fa3;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn--large {
+  font-size: 1.25rem;
+  padding: 0.75rem 1.5rem;
+}
+
+/* Landing */
+.landing {
+  text-align: center;
+  padding-top: 4rem;
+}
+.landing__title {
+  font-size: 3rem;
+  margin: 0;
+}
+.landing__tagline {
+  opacity: 0.7;
+  margin-bottom: 2rem;
+}
+.landing__divider {
+  margin: 1.5rem 0;
+  opacity: 0.5;
+}
+.landing__join {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+.landing__input {
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  text-align: center;
+  font-size: 1.1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #353861;
+  background: var(--panel);
+  color: var(--text);
+}
+
+/* Game */
+.game__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid #2a2d4d;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+}
+.game__label {
+  opacity: 0.6;
+}
+.game__code {
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+.game__host {
+  opacity: 0.6;
+}
+.game__phase {
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  opacity: 0.7;
+}
+.game__hint {
+  opacity: 0.8;
+}
+
+/* Skittle panel */
+.skittle-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.skittle-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-transform: capitalize;
+}
+.skittle__dot {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 50%;
+  display: inline-block;
+}
+.skittle-btn--red .skittle__dot,
+.skittle--red .skittle__dot {
+  background: var(--red);
+}
+.skittle-btn--orange .skittle__dot,
+.skittle--orange .skittle__dot {
+  background: var(--orange);
+}
+.skittle-btn--yellow .skittle__dot,
+.skittle--yellow .skittle__dot {
+  background: var(--yellow);
+}
+.skittle-btn--purple .skittle__dot,
+.skittle--purple .skittle__dot {
+  background: var(--purple);
+}
+.skittle-btn--green .skittle__dot,
+.skittle--green .skittle__dot {
+  background: var(--green);
+}
+
+/* Player list */
+.player-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+.player-card {
+  background: var(--panel);
+  border: 1px solid #2a2d4d;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.player-card--self {
+  border-color: var(--yellow);
+}
+.player-card__flag svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.player-card__body {
+  padding: 0.75rem;
+}
+.player-card__name {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.player-card__you {
+  opacity: 0.6;
+  font-weight: 400;
+}
+.player-card__skittles {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+}
+.player-card__skittles li {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+}
