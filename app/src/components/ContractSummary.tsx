@@ -55,6 +55,14 @@ export function ContractSummary({
     <div className="summary" aria-label="Contract summary">
       {statements.map((s, i) => {
         const verb = s.from === viewerId ? 'give' : 'gives'
+        if (s.trigger === 'onEliminate') {
+          return (
+            <p className="summary__line" key={i}>
+              <span className="summary__when">If eliminated</span>, {faction(s.from)} gives{' '}
+              {faction(s.to)} <Give give={s.give} />.
+            </p>
+          )
+        }
         if (s.trigger === 'onReceive') {
           const rc = receivedColour(s.give)
           return (

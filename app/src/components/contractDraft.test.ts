@@ -39,6 +39,7 @@ describe('contractToClauses', () => {
       onSign: buckets.onSign,
       onEvent: buckets.onEvent,
       onReceive: buckets.onReceive,
+      onEliminate: buckets.onEliminate,
       expiresRound: null,
       signFired: false
     }

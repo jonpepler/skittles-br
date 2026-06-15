@@ -80,6 +80,7 @@ export type GameAction =
       onSign: Transfer[]
       onEvent: Transfer[]
       onReceive: Transfer[]
+      onEliminate: Transfer[]
       expiresRound: number | null
     }
   | { type: 'signContract'; contractId: string }
@@ -90,6 +91,7 @@ export type GameAction =
       onSign: Transfer[]
       onEvent: Transfer[]
       onReceive: Transfer[]
+      onEliminate: Transfer[]
       expiresRound: number | null
     }
   | { type: 'cancelContract'; contractId: string }

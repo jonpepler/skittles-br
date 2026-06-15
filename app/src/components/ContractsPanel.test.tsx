@@ -72,6 +72,7 @@ describe('ContractsPanel command editor', () => {
       onSign: [{ from: 'them', to: 'me', give: { red: 2 } }],
       onEvent: [],
       onReceive: [],
+      onEliminate: [],
       expiresRound: null,
       signFired: false
     }
@@ -95,6 +96,7 @@ describe('ContractsPanel command editor', () => {
       onSign: [{ from: 'them', to: 'me', give: { red: 2 } }],
       onEvent: [],
       onReceive: [],
+      onEliminate: [],
       expiresRound: null,
       signFired: false
     }

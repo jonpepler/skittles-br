@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { addPlayer, applyAction, createGame } from './state.js'
+import { addPlayer, applyAction, createGame, resolveEvent } from './state.js'
 import { evalAmount } from './contracts.js'
 import type { GameState } from './types.js'
 import type { SkittleSet } from '../generators/event.js'
@@ -62,6 +62,7 @@ describe('contracts — sign and fire', () => {
       onSign: [{ from: 'a', to: 'b', give: { red: 2 } }],
       onEvent: [],
       onReceive: [],
+      onEliminate: [],
       expiresRound: null
     })
     expect(game.contracts).toHaveLength(1)
@@ -87,6 +88,7 @@ describe('contracts — sign and fire', () => {
       ],
       onEvent: [],
       onReceive: [],
+      onEliminate: [],
       expiresRound: null
     })
     const id = game.contracts[0]!.id
@@ -107,6 +109,7 @@ describe('contracts — sign and fire', () => {
       onSign: [{ from: 'a', to: 'b', give: { red: 5 } }],
       onEvent: [],
       onReceive: [],
+      onEliminate: [],
       expiresRound: null
     })
     const id = game.contracts[0]!.id
@@ -128,6 +131,7 @@ describe('contracts — recurring (the "cover my event reds" example)', () => {
       onSign: [{ from: 'b', to: 'a', give: { red: { all: 'red' } } }],
       onEvent: [{ from: 'a', to: 'b', give: { red: { eventReq: 'red' } } }],
       onReceive: [],
+      onEliminate: [],
       expiresRound: null
     })
     const id = game.contracts[0]!.id
@@ -154,6 +158,7 @@ describe('contracts — recurring (the "cover my event reds" example)', () => {
       onSign: [],
       onEvent: [{ from: 'a', to: 'b', give: { red: 1 } }],
       onReceive: [],
+      onEliminate: [],
       expiresRound: 1
     })
     const id = game.contracts[0]!.id
@@ -177,6 +182,7 @@ describe('contracts — onReceive (percentage cut)', () => {
       onSign: [],
       onEvent: [],
       onReceive: [{ from: 'a', to: 'b', give: { red: { percent: 50, of: { received: 'red' } } } }],
+      onEliminate: [],
       expiresRound: null
     })
     const id = game.contracts[0]!.id
@@ -211,6 +217,7 @@ describe('contracts — onReceive (percentage cut)', () => {
         { from: 'a', to: 'b', give: { red: { percent: 50, of: { received: 'red' } } } },
         { from: 'b', to: 'a', give: { red: { percent: 50, of: { received: 'red' } } } }
       ],
+      onEliminate: [],
       expiresRound: null
     })
     const id = game.contracts[0]!.id
@@ -240,6 +247,7 @@ describe('contracts — negotiation (revise / counter-offer)', () => {
       onSign: [{ from: 'a', to: 'b', give: { red: 1 } }],
       onEvent: [],
       onReceive: [],
+      onEliminate: [],
       expiresRound: null
     })
   }
@@ -258,6 +266,7 @@ describe('contracts — negotiation (revise / counter-offer)', () => {
       ],
       onEvent: [],
       onReceive: [],
+      onEliminate: [],
       expiresRound: null
     })
     const c = countered.contracts[0]!
@@ -278,6 +287,7 @@ describe('contracts — negotiation (revise / counter-offer)', () => {
       ],
       onEvent: [],
       onReceive: [],
+      onEliminate: [],
       expiresRound: null
     })
     // a agrees to b's counter.
@@ -295,6 +305,7 @@ describe('contracts — negotiation (revise / counter-offer)', () => {
       onSign: [{ from: 'a', to: 'b', give: { red: 1 } }],
       onEvent: [],
       onReceive: [],
+      onEliminate: [],
       expiresRound: null
     })
     const id = game.contracts[0]!.id
@@ -306,6 +317,7 @@ describe('contracts — negotiation (revise / counter-offer)', () => {
       onSign: [{ from: 'a', to: 'c', give: { red: 1 } }],
       onEvent: [],
       onReceive: [],
+      onEliminate: [],
       expiresRound: null
     })
     const c = game.contracts[0]!
@@ -325,6 +337,7 @@ describe('contracts — negotiation (revise / counter-offer)', () => {
       onSign: [{ from: 'a', to: 'b', give: { red: 1 } }],
       onEvent: [],
       onReceive: [],
+      onEliminate: [],
       expiresRound: null
     })
     const id = withContract.contracts[0]!.id
@@ -335,6 +348,7 @@ describe('contracts — negotiation (revise / counter-offer)', () => {
       onSign: [],
       onEvent: [],
       onReceive: [],
+      onEliminate: [],
       expiresRound: null
     })
     expect(after).toBe(withContract)
@@ -351,11 +365,46 @@ describe('contracts — authority', () => {
       onSign: [{ from: 'a', to: 'b', give: { red: 1 } }],
       onEvent: [],
       onReceive: [],
+      onEliminate: [],
       expiresRound: null
     })
     const id = game.contracts[0]!.id
     expect(applyAction(game, 'c', { type: 'signContract', contractId: id }).contracts).toHaveLength(1)
     expect(applyAction(game, 'c', { type: 'cancelContract', contractId: id }).contracts).toHaveLength(1)
     expect(applyAction(game, 'b', { type: 'cancelContract', contractId: id }).contracts).toHaveLength(0)
+  })
+})
+
+describe('contracts — onEliminate', () => {
+  it('hands the eliminated player’s skittles to the beneficiary on resolution', () => {
+    let game = activeWith('a', 'b', 'c') // three players so the game continues
+    game = give(game, 'a', set({ red: 5 })) // can't afford the gate below
+    game = give(game, 'b', set({ red: 9 }))
+    game = give(game, 'c', set({ red: 9 }))
+
+    // "If a is eliminated, a gives b all their red."
+    game = applyAction(game, 'a', {
+      type: 'proposeContract',
+      parties: ['a', 'b'],
+      onSign: [],
+      onEvent: [],
+      onReceive: [],
+      onEliminate: [{ from: 'a', to: 'b', give: { red: { all: 'red' } } }],
+      expiresRound: null
+    })
+    const id = game.contracts[0]!.id
+    game = applyAction(game, 'b', { type: 'signContract', contractId: id })
+
+    // An event that a can't pay but b and c can.
+    game = {
+      ...game,
+      event: { name: 'E', description: '', requirement: set({ red: 7 }), reward: set({}), penalty: set({}) }
+    }
+    const resolved = resolveEvent(game)
+
+    expect(resolved.players['a']!.out).toBe(true)
+    expect(resolved.players['a']!.skittles).toEqual(set({ red: 0 }))
+    // b spent 7 on the gate (9 → 2) then received a's 5 → 7.
+    expect(resolved.players['b']!.skittles!.red).toBe(7)
   })
 })

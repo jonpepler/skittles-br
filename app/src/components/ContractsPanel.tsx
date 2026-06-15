@@ -25,6 +25,7 @@ export function ContractsPanel({
     onSign: Transfer[],
     onEvent: Transfer[],
     onReceive: Transfer[],
+    onEliminate: Transfer[],
     expiresRound: number | null
   ) => void
   onSign: (contractId: string) => void
@@ -34,6 +35,7 @@ export function ContractsPanel({
     onSign: Transfer[],
     onEvent: Transfer[],
     onReceive: Transfer[],
+    onEliminate: Transfer[],
     expiresRound: number | null
   ) => void
   onCancel: (contractId: string) => void
@@ -59,8 +61,8 @@ export function ContractsPanel({
           selfId={selfId}
           round={round}
           submitLabel="Propose contract"
-          onSubmit={(parties, onSignT, onEventT, onReceiveT, expires) => {
-            onPropose(parties, onSignT, onEventT, onReceiveT, expires)
+          onSubmit={(parties, onSignT, onEventT, onReceiveT, onElimT, expires) => {
+            onPropose(parties, onSignT, onEventT, onReceiveT, onElimT, expires)
             setDraftKey((k) => k + 1)
           }}
         />
@@ -89,7 +91,12 @@ export function ContractsPanel({
                     </span>
                   </div>
                   <ContractSummary
-                    buckets={{ onSign: c.onSign, onEvent: c.onEvent, onReceive: c.onReceive }}
+                    buckets={{
+                      onSign: c.onSign,
+                      onEvent: c.onEvent,
+                      onReceive: c.onReceive,
+                      onEliminate: c.onEliminate
+                    }}
                     players={playerMap}
                     viewerId={selfId}
                   />
@@ -102,8 +109,8 @@ export function ContractsPanel({
                       initialParties={c.parties}
                       initialClauses={contractToClauses(c)}
                       submitLabel="Send counter-offer"
-                      onSubmit={(parties, onSignT, onEventT, onReceiveT, expires) => {
-                        onRevise(c.id, parties, onSignT, onEventT, onReceiveT, expires)
+                      onSubmit={(parties, onSignT, onEventT, onReceiveT, onElimT, expires) => {
+                        onRevise(c.id, parties, onSignT, onEventT, onReceiveT, onElimT, expires)
                         setCountering(null)
                       }}
                       onCancel={() => setCountering(null)}

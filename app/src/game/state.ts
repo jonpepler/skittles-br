@@ -20,6 +20,7 @@ import {
   allSigned,
   diffGains,
   expireContracts,
+  fireOnEliminate,
   fireOnEvent,
   fireOnSign,
   fireReceives,
@@ -185,17 +186,31 @@ function withSkittles(
 export function resolveEvent(state: GameState): GameState {
   if (!state.event) return state
   const { requirement, reward } = state.event
+
+  // Players who can afford the gate spend it for the reward; the rest fail.
   const players: Record<string, PlayerState> = {}
+  const failed: string[] = []
   for (const [id, p] of Object.entries(state.players)) {
     if (p.out || !isValidSet(p.skittles)) {
       players[id] = p
       continue
     }
-    players[id] = canAfford(p.skittles, requirement)
-      ? { ...p, skittles: addSkittles(subSkittles(p.skittles, requirement), reward) }
-      : { ...p, out: true }
+    if (canAfford(p.skittles, requirement)) {
+      players[id] = { ...p, skittles: addSkittles(subSkittles(p.skittles, requirement), reward) }
+    } else {
+      players[id] = p // still alive for now; their onEliminate clauses fire below
+      failed.push(id)
+    }
   }
-  const resolved: GameState = { ...state, players, event: null, eventEndsAt: null }
+
+  let resolved: GameState = { ...state, players, event: null, eventEndsAt: null }
+  // Each failer hands over its skittles per any onEliminate contract, then is out.
+  for (const id of failed) {
+    resolved = fireOnEliminate(resolved, id)
+    const p = resolved.players[id]
+    if (p) resolved = { ...resolved, players: { ...resolved.players, [id]: { ...p, out: true } } }
+  }
+
   const survivors = alivePlayers(resolved).length
   return survivors <= 1 ? { ...resolved, phase: 'complete' } : resolved
 }
@@ -312,7 +327,12 @@ export function applyAction(
         const p = state.players[id]
         if (!p || p.out) return state
       }
-      const transfers = [...action.onSign, ...action.onEvent, ...action.onReceive]
+      const transfers = [
+        ...action.onSign,
+        ...action.onEvent,
+        ...action.onReceive,
+        ...action.onEliminate
+      ]
       if (!transfers.every((t) => unique.has(t.from) && unique.has(t.to))) return state
       const contract: Contract = {
         id: `contract-${state.nextContractId}`,
@@ -321,6 +341,7 @@ export function applyAction(
         onSign: action.onSign,
         onEvent: action.onEvent,
         onReceive: action.onReceive,
+        onEliminate: action.onEliminate,
         expiresRound: action.expiresRound,
         signFired: false
       }
@@ -347,7 +368,10 @@ export function applyAction(
       // drop the contract if it has no recurring (onEvent) clause.
       const fired = fireOnSign(withSign, signedContract)
       const finalContract: Contract = { ...signedContract, signFired: true }
-      const recurring = finalContract.onEvent.length > 0 || finalContract.onReceive.length > 0
+      const recurring =
+        finalContract.onEvent.length > 0 ||
+        finalContract.onReceive.length > 0 ||
+        finalContract.onEliminate.length > 0
       const contracts = fired.contracts
         .map((c) => (c.id === finalContract.id ? finalContract : c))
         .filter((c) => c.id !== finalContract.id || recurring)
@@ -371,7 +395,12 @@ export function applyAction(
         const p = state.players[id]
         if (!p || p.out) return state
       }
-      const transfers = [...action.onSign, ...action.onEvent, ...action.onReceive]
+      const transfers = [
+        ...action.onSign,
+        ...action.onEvent,
+        ...action.onReceive,
+        ...action.onEliminate
+      ]
       if (!transfers.every((t) => unique.has(t.from) && unique.has(t.to))) return state
       const revised: Contract = {
         ...c,
@@ -379,6 +408,7 @@ export function applyAction(
         onSign: action.onSign,
         onEvent: action.onEvent,
         onReceive: action.onReceive,
+        onEliminate: action.onEliminate,
         expiresRound: action.expiresRound,
         signed: [senderId]
       }

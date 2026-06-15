@@ -548,6 +548,9 @@ h3 {
 .clause-card--receive {
   border-left-color: var(--green);
 }
+.clause-card--eliminate {
+  border-left-color: var(--red);
+}
 .clause-card__x {
   position: absolute;
   top: 0.45rem;

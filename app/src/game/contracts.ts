@@ -42,6 +42,9 @@ export type Contract = {
   /** Transfers applied when a party gains skittles via a trade/contract. The
    *  transfer fires for the party named as its `from` (i.e. "when I receive…"). */
   onReceive: Transfer[]
+  /** Transfers applied when a party is eliminated, fired for its `from` party
+   *  ("if I'm eliminated, give you my…"). Runs before the player is marked out. */
+  onEliminate: Transfer[]
   /** Round after which the contract is dropped (null = no expiry). */
   expiresRound: number | null
   /** Whether the onSign clause has already fired. */
@@ -176,6 +179,22 @@ export function fireReceives(
   }
   if (next === state) return next
   return fireReceives(next, diffGains(state, next), depth + 1)
+}
+
+/**
+ * Fire onEliminate clauses for a player about to be removed. Each clause fires
+ * for its `from` party, so "if I'm eliminated, give you my reds" hands the
+ * eliminated player's skittles over while they're still (just) in the game.
+ */
+export function fireOnEliminate(state: GameState, eliminatedId: string): GameState {
+  let next = state
+  for (const contract of state.contracts) {
+    if (!allSigned(contract) || contract.onEliminate.length === 0) continue
+    const transfers = contract.onEliminate.filter((t) => t.from === eliminatedId)
+    if (transfers.length === 0) continue
+    next = applyTransfers(next, transfers, next.event) ?? next
+  }
+  return next
 }
 
 /** Drop contracts past their expiry round. */
