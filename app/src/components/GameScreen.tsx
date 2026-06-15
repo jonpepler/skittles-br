@@ -5,6 +5,7 @@ import { PlayerCard } from './PlayerCard.js'
 import { SkittlePanel } from './SkittlePanel.js'
 import { EventPanel } from './EventPanel.js'
 import { ShareInvite } from './ShareInvite.js'
+import { TradePanel } from './TradePanel.js'
 
 export function GameScreen({
   roomCode,
@@ -84,6 +85,15 @@ export function GameScreen({
               {state.event ? 'Next event' : 'Trigger event'}
             </button>
           )}
+
+          <TradePanel
+            players={players}
+            selfId={selfId!}
+            offers={state.offers}
+            onPropose={game.proposeTrade}
+            onAccept={game.acceptTrade}
+            onCancel={game.cancelTrade}
+          />
         </section>
       )}
 
