@@ -7,12 +7,14 @@ import {
   createGame,
   electHost,
   migrateHost,
+  redactStateFor,
   removePlayer
 } from '../game/state.js'
-import type { GameState, Role } from '../game/types.js'
-import type { SkittleColour } from '../generators/event.js'
+import type { GameAction, GameState, Role } from '../game/types.js'
+import type { SkittleColour, SkittleSet } from '../generators/event.js'
 
 export interface GameRoomApi {
+  /** The state as this player is allowed to see it (neighbours' skittles only). */
   state: GameState | null
   selfId: PeerId | null
   connected: boolean
@@ -21,15 +23,22 @@ export interface GameRoomApi {
   incrementSkittle: (colour: SkittleColour) => void
   start: () => void
   triggerEvent: () => void
+  setEventDuration: (seconds: number) => void
+  proposeTrade: (to: string, give: SkittleSet, receive: SkittleSet) => void
+  acceptTrade: (offerId: string) => void
+  cancelTrade: (offerId: string) => void
 }
 
 /**
- * Join a game room and expose the live state plus the actions a player can
- * take. Authority is dynamic: the connected peer with the lowest id is the
- * host, so if the host leaves the next-lowest peer promotes itself and adopts
- * the last broadcast state. Handlers therefore branch on the *current* host
- * status rather than a fixed role; `role` only seeds who creates the initial
- * lobby vs. who waits for it.
+ * Join a game room and expose the live (redacted) state plus the actions a
+ * player can take.
+ *
+ * Authority is dynamic: the lowest-id connected peer is host. The host holds
+ * the full authoritative state, but sends every peer only a *redacted* view
+ * (their own + neighbours' skittles). To keep host failover working despite
+ * redaction, the host also sends the full state as a private snapshot to its
+ * designated successor (the next-lowest peer); if the host leaves, that
+ * successor promotes itself using the snapshot.
  */
 export function useGameRoom(roomCode: string, role: Role): GameRoomApi {
   const [state, setState] = useState<GameState | null>(null)
@@ -38,7 +47,8 @@ export function useGameRoom(roomCode: string, role: Role): GameRoomApi {
 
   const roomRef = useRef<GameRoom | null>(null)
   const selfIdRef = useRef<PeerId | null>(null)
-  const stateRef = useRef<GameState | null>(null) // authoritative if host, else last seen
+  const fullRef = useRef<GameState | null>(null) // authoritative (host) / snapshot backup
+  const viewRef = useRef<GameState | null>(null) // last redacted view (guest fallback)
   const peersRef = useRef<Set<PeerId>>(new Set())
   const isHostRef = useRef(role === 'host')
 
@@ -48,75 +58,82 @@ export function useGameRoom(roomCode: string, role: Role): GameRoomApi {
     selfIdRef.current = room.selfId
     peersRef.current = new Set()
 
+    const self = room.selfId
+
     const setHost = (value: boolean): void => {
       isHostRef.current = value
       setIsHostState(value)
     }
-    const commit = (next: GameState): void => {
-      stateRef.current = next
-      setState(next)
+    /** Host: store full state, render own redacted view, send everyone theirs. */
+    const publish = (full: GameState): void => {
+      fullRef.current = full
+      setState(redactStateFor(full, self))
+      for (const peer of peersRef.current) {
+        room.sendState(redactStateFor(full, peer), peer)
+      }
+      const successor = electHost([...peersRef.current])
+      if (successor) room.sendSnapshot(full, successor)
     }
-    const broadcast = (): void => {
-      if (stateRef.current) room.sendState(stateRef.current)
-    }
-    /** A guest promotes itself if it's the lowest-id peer after the host left. */
-    const electAndMaybePromote = (departedHostId: PeerId): void => {
-      const remaining = [room.selfId, ...peersRef.current]
-      if (electHost(remaining) !== room.selfId) return // someone more senior promotes
-      if (!stateRef.current) return
-      setHost(true)
-      commit(migrateHost(stateRef.current, room.selfId, departedHostId))
-      broadcast()
+    const applyAsHost = (senderId: PeerId, action: GameAction): void => {
+      if (!isHostRef.current || !fullRef.current) return
+      publish(applyAction(fullRef.current, senderId, action))
     }
 
     if (role === 'host') {
       setHost(true)
-      commit(addPlayer(createGame(roomCode, room.selfId), room.selfId))
+      publish(addPlayer(createGame(roomCode, self), self))
     } else {
       setHost(false)
     }
 
-    room.setOnState((incoming, peerId) => {
+    room.setOnState((view, peerId) => {
       if (isHostRef.current) {
         // Split-brain resolution: yield only to a more senior (lower id) host.
-        if (peerId < room.selfId) {
+        if (peerId < self) {
           setHost(false)
-          commit(incoming)
+          fullRef.current = null
+        } else {
+          return
         }
-        return
       }
-      commit(incoming)
+      viewRef.current = view
+      setState(view)
     })
 
-    room.setOnAction((action, peerId) => {
-      if (!isHostRef.current || !stateRef.current) return
-      commit(applyAction(stateRef.current, peerId, action))
-      broadcast()
+    // Only the successor receives this; keep it as the failover backup.
+    room.setOnSnapshot((full) => {
+      if (!isHostRef.current) fullRef.current = full
     })
+
+    room.setOnAction((action, peerId) => applyAsHost(peerId, action))
 
     room.setOnHello(() => {
-      if (isHostRef.current) broadcast()
+      if (isHostRef.current && fullRef.current) publish(fullRef.current)
     })
 
     room.setOnPeerJoin((peerId) => {
       peersRef.current.add(peerId)
-      if (isHostRef.current && stateRef.current) {
-        commit(addPlayer(stateRef.current, peerId))
-        broadcast()
+      if (isHostRef.current && fullRef.current) {
+        publish(addPlayer(fullRef.current, peerId))
       } else {
-        // Ask whoever is host to (re)send the current state.
         room.sendHello()
       }
     })
 
     room.setOnPeerLeave((peerId) => {
       peersRef.current.delete(peerId)
-      if (isHostRef.current && stateRef.current) {
-        commit(removePlayer(stateRef.current, peerId))
-        broadcast()
-      } else if (stateRef.current?.hostId === peerId) {
-        electAndMaybePromote(peerId)
+      if (isHostRef.current && fullRef.current) {
+        publish(removePlayer(fullRef.current, peerId))
+        return
       }
+      // The host left: the lowest-id remaining peer promotes itself.
+      const departedWasHost = (viewRef.current ?? fullRef.current)?.hostId === peerId
+      if (!departedWasHost) return
+      if (electHost([self, ...peersRef.current]) !== self) return
+      const base = fullRef.current ?? viewRef.current
+      if (!base) return
+      setHost(true)
+      publish(migrateHost(base, self, peerId))
     })
 
     setConnected(true)
@@ -124,41 +141,30 @@ export function useGameRoom(roomCode: string, role: Role): GameRoomApi {
     return () => {
       room.leave()
       roomRef.current = null
-      stateRef.current = null
+      fullRef.current = null
+      viewRef.current = null
       peersRef.current = new Set()
       setConnected(false)
     }
   }, [roomCode, role])
 
-  const incrementSkittle = useCallback((colour: SkittleColour) => {
+  // Host applies locally; guests send a request the host validates.
+  const dispatch = useCallback((action: GameAction) => {
     const room = roomRef.current
     if (!room) return
-    if (isHostRef.current && stateRef.current && selfIdRef.current) {
-      const next = applyAction(stateRef.current, selfIdRef.current, {
-        type: 'incrementSkittle',
-        colour
-      })
-      stateRef.current = next
-      setState(next)
-      room.sendState(next)
+    if (isHostRef.current && fullRef.current && selfIdRef.current) {
+      const next = applyAction(fullRef.current, selfIdRef.current, action)
+      fullRef.current = next
+      setState(redactStateFor(next, selfIdRef.current))
+      for (const peer of peersRef.current) {
+        room.sendState(redactStateFor(next, peer), peer)
+      }
+      const successor = electHost([...peersRef.current])
+      if (successor) room.sendSnapshot(next, successor)
     } else {
-      room.sendAction({ type: 'incrementSkittle', colour })
+      room.sendAction(action)
     }
   }, [])
-
-  // Host-only actions the host applies locally; guests can't invoke these
-  // (the UI only exposes them to the host, and applyAction validates anyway).
-  const hostAction = useCallback((action: { type: 'start' | 'triggerEvent' }) => {
-    const room = roomRef.current
-    if (!room || !isHostRef.current || !stateRef.current || !selfIdRef.current) return
-    const next = applyAction(stateRef.current, selfIdRef.current, action)
-    stateRef.current = next
-    setState(next)
-    room.sendState(next)
-  }, [])
-
-  const start = useCallback(() => hostAction({ type: 'start' }), [hostAction])
-  const triggerEvent = useCallback(() => hostAction({ type: 'triggerEvent' }), [hostAction])
 
   return {
     state,
@@ -166,8 +172,12 @@ export function useGameRoom(roomCode: string, role: Role): GameRoomApi {
     connected,
     isHost,
     canStart: isHost && state ? canStartGame(state) : false,
-    incrementSkittle,
-    start,
-    triggerEvent
+    incrementSkittle: useCallback((colour: SkittleColour) => dispatch({ type: 'incrementSkittle', colour }), [dispatch]),
+    start: useCallback(() => dispatch({ type: 'start' }), [dispatch]),
+    triggerEvent: useCallback(() => dispatch({ type: 'triggerEvent' }), [dispatch]),
+    setEventDuration: useCallback((seconds: number) => dispatch({ type: 'setEventDuration', seconds }), [dispatch]),
+    proposeTrade: useCallback((to: string, give: SkittleSet, receive: SkittleSet) => dispatch({ type: 'proposeTrade', to, give, receive }), [dispatch]),
+    acceptTrade: useCallback((offerId: string) => dispatch({ type: 'acceptTrade', offerId }), [dispatch]),
+    cancelTrade: useCallback((offerId: string) => dispatch({ type: 'cancelTrade', offerId }), [dispatch])
   }
 }

@@ -8,10 +8,33 @@ import {
   electHost,
   emptySkittles,
   migrateHost,
+  neighboursOf,
   playerCount,
   playerSeed,
-  removePlayer
+  redactStateFor,
+  removePlayer,
+  resolveEvent
 } from './state.js'
+import type { GameState } from './types.js'
+import type { SkittleSet } from '../generators/event.js'
+
+const set = (partial: Partial<SkittleSet>): SkittleSet => ({
+  red: 0,
+  orange: 0,
+  yellow: 0,
+  purple: 0,
+  green: 0,
+  ...partial
+})
+
+function activeWith(...ids: string[]): GameState {
+  const lobby = ids.reduce((s, id) => addPlayer(s, id), createGame(ROOM, ids[0] ?? 'host'))
+  return applyAction(lobby, ids[0]!, { type: 'start' })
+}
+
+function giveSkittles(state: GameState, id: string, skittles: SkittleSet): GameState {
+  return { ...state, players: { ...state.players, [id]: { ...state.players[id]!, skittles } } }
+}
 
 const ROOM = 'ABCDE'
 
@@ -22,13 +45,16 @@ function lobbyWith(...ids: string[]) {
 describe('game state', () => {
   it('creates an empty lobby owned by the host', () => {
     const s = createGame(ROOM, 'host')
-    expect(s).toEqual({
+    expect(s).toMatchObject({
       roomCode: ROOM,
       hostId: 'host',
       phase: 'lobby',
       players: {},
+      order: [],
       round: 0,
-      event: null
+      event: null,
+      eventEndsAt: null,
+      offers: []
     })
   })
 
@@ -44,9 +70,9 @@ describe('game state', () => {
     let s = lobbyWith('host', 'p2')
     s = applyAction(s, 'host', { type: 'start' })
     s = applyAction(s, 'p2', { type: 'incrementSkittle', colour: 'red' })
-    const before = s.players['p2']!.skittles.red
+    const before = s.players['p2']!.skittles!.red
     const after = addPlayer(s, 'p2')
-    expect(after.players['p2']!.skittles.red).toBe(before)
+    expect(after.players['p2']!.skittles!.red).toBe(before)
   })
 
   it('removePlayer removes only the named player and is idempotent', () => {
@@ -88,8 +114,8 @@ describe('applyAction — authority and validation', () => {
   it('increments a skittle by exactly one for the sender only', () => {
     const active = applyAction(lobbyWith('host', 'p2'), 'host', { type: 'start' })
     const next = applyAction(active, 'p2', { type: 'incrementSkittle', colour: 'green' })
-    expect(next.players['p2']!.skittles.green).toBe(1)
-    expect(next.players['host']!.skittles.green).toBe(0)
+    expect(next.players['p2']!.skittles!.green).toBe(1)
+    expect(next.players['host']!.skittles!.green).toBe(0)
   })
 
   it('ignores skittle increments before the game is active', () => {
@@ -111,7 +137,7 @@ describe('applyAction — authority and validation', () => {
     expect(applyAction(s, 'p2', { type: 'reset' })).toBe(s) // guest can't reset
     const reset = applyAction(s, 'host', { type: 'reset' })
     expect(reset.phase).toBe('lobby')
-    expect(reset.players['p2']!.skittles.yellow).toBe(0)
+    expect(reset.players['p2']!.skittles!.yellow).toBe(0)
     expect(reset.event).toBeNull()
   })
 })
@@ -163,6 +189,108 @@ describe('host election and migration', () => {
     s = applyAction(s, 'mmm', { type: 'incrementSkittle', colour: 'purple' })
     const migrated = migrateHost(s, 'mmm', 'aaa')
     expect(migrated.phase).toBe('active')
-    expect(migrated.players['mmm']!.skittles.purple).toBe(1)
+    expect(migrated.players['mmm']!.skittles!.purple).toBe(1)
+  })
+})
+
+describe('neighbours and redaction', () => {
+  it('computes left/right neighbours in the seating ring', () => {
+    const order = ['a', 'b', 'c', 'd']
+    expect(neighboursOf(order, 'a').sort()).toEqual(['b', 'd']) // wraps around
+    expect(neighboursOf(order, 'c').sort()).toEqual(['b', 'd'])
+    expect(neighboursOf([], 'a')).toEqual([])
+    expect(neighboursOf(['a'], 'a')).toEqual([]) // alone: no neighbours
+    expect(neighboursOf(['a', 'b'], 'a')).toEqual(['b']) // pair: the other once
+  })
+
+  it('hides non-neighbours’ skittles but keeps own and neighbours’', () => {
+    const game = activeWith('a', 'b', 'c', 'd') // ring a-b-c-d
+    const view = redactStateFor(game, 'a')
+    expect(view.players['a']!.skittles).not.toBeNull() // self
+    expect(view.players['b']!.skittles).not.toBeNull() // neighbour
+    expect(view.players['d']!.skittles).not.toBeNull() // neighbour (wrap)
+    expect(view.players['c']!.skittles).toBeNull() // across the ring: hidden
+  })
+
+  it('only shows trade offers the viewer is party to', () => {
+    let game = activeWith('a', 'b', 'c')
+    game = applyAction(game, 'a', { type: 'proposeTrade', to: 'b', give: set({ red: 0 }), receive: set({ green: 1 }) })
+    game = applyAction(game, 'b', { type: 'proposeTrade', to: 'c', give: set({ green: 0 }), receive: set({ red: 1 }) })
+    expect(redactStateFor(game, 'a').offers).toHaveLength(1)
+    expect(redactStateFor(game, 'c').offers).toHaveLength(1)
+    expect(redactStateFor(game, 'b').offers).toHaveLength(2)
+  })
+})
+
+describe('event resolution', () => {
+  it('spends the requirement for the reward when affordable', () => {
+    let game = activeWith('a', 'b')
+    game = giveSkittles(game, 'a', set({ red: 5, green: 2 }))
+    game = { ...game, event: { name: 'E', description: '', requirement: set({ red: 2 }), reward: set({ green: 3 }), penalty: set({ yellow: 1 }) } }
+    const resolved = resolveEvent(game)
+    expect(resolved.players['a']!.skittles).toEqual(set({ red: 3, green: 5 }))
+    expect(resolved.event).toBeNull()
+  })
+
+  it('applies the penalty (clamped at zero) when the requirement is unaffordable', () => {
+    let game = activeWith('a', 'b')
+    game = giveSkittles(game, 'a', set({ red: 1, yellow: 0 }))
+    game = { ...game, event: { name: 'E', description: '', requirement: set({ red: 3 }), reward: set({ green: 3 }), penalty: set({ red: 5, yellow: 2 }) } }
+    const resolved = resolveEvent(game)
+    expect(resolved.players['a']!.skittles).toEqual(set({ red: 0, yellow: 0 }))
+  })
+})
+
+describe('trading', () => {
+  it('executes a trade when both parties accept and can afford it', () => {
+    let game = activeWith('a', 'b')
+    game = giveSkittles(game, 'a', set({ red: 3 }))
+    game = giveSkittles(game, 'b', set({ green: 2 }))
+    game = applyAction(game, 'a', { type: 'proposeTrade', to: 'b', give: set({ red: 2 }), receive: set({ green: 1 }) })
+    expect(game.offers).toHaveLength(1)
+    const done = applyAction(game, 'b', { type: 'acceptTrade', offerId: game.offers[0]!.id })
+    expect(done.players['a']!.skittles).toEqual(set({ red: 1, green: 1 }))
+    expect(done.players['b']!.skittles).toEqual(set({ red: 2, green: 1 }))
+    expect(done.offers).toHaveLength(0)
+  })
+
+  it('rejects proposing a trade the proposer cannot afford', () => {
+    let game = activeWith('a', 'b')
+    game = giveSkittles(game, 'a', set({ red: 1 }))
+    const next = applyAction(game, 'a', { type: 'proposeTrade', to: 'b', give: set({ red: 5 }), receive: set({ green: 1 }) })
+    expect(next.offers).toHaveLength(0)
+  })
+
+  it('only the recipient can accept; only a party can cancel', () => {
+    let game = activeWith('a', 'b', 'c')
+    game = giveSkittles(game, 'a', set({ red: 2 }))
+    game = applyAction(game, 'a', { type: 'proposeTrade', to: 'b', give: set({ red: 1 }), receive: set({ green: 1 }) })
+    const id = game.offers[0]!.id
+    expect(applyAction(game, 'c', { type: 'acceptTrade', offerId: id }).offers).toHaveLength(1) // not recipient
+    expect(applyAction(game, 'c', { type: 'cancelTrade', offerId: id }).offers).toHaveLength(1) // not a party
+    expect(applyAction(game, 'a', { type: 'cancelTrade', offerId: id }).offers).toHaveLength(0) // proposer cancels
+  })
+
+  it('drops a leaving player’s offers', () => {
+    let game = activeWith('a', 'b')
+    game = giveSkittles(game, 'a', set({ red: 2 }))
+    game = applyAction(game, 'a', { type: 'proposeTrade', to: 'b', give: set({ red: 1 }), receive: set({ green: 1 }) })
+    expect(removePlayer(game, 'a').offers).toHaveLength(0)
+  })
+})
+
+describe('event duration', () => {
+  it('lets the host set a clamped duration', () => {
+    const game = activeWith('a', 'b')
+    expect(applyAction(game, 'a', { type: 'setEventDuration', seconds: 45 }).eventDuration).toBe(45)
+    expect(applyAction(game, 'a', { type: 'setEventDuration', seconds: 1 }).eventDuration).toBe(game.eventDuration) // too low
+    expect(applyAction(game, 'b', { type: 'setEventDuration', seconds: 45 }).eventDuration).toBe(game.eventDuration) // not host
+  })
+
+  it('stamps an end time on the event using injected now', () => {
+    const game = activeWith('a', 'b')
+    const withDuration = applyAction(game, 'a', { type: 'setEventDuration', seconds: 20 })
+    const triggered = applyAction(withDuration, 'a', { type: 'triggerEvent' }, 1_000_000)
+    expect(triggered.eventEndsAt).toBe(1_000_000 + 20_000)
   })
 })

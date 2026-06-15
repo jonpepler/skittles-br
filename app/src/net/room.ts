@@ -23,6 +23,9 @@ export interface GameRoom {
   selfId: PeerId
   sendState: (state: GameState, target?: Target) => void
   setOnState: (cb: (state: GameState, peerId: PeerId) => void) => void
+  /** Full (unredacted) state sent only to the failover successor. */
+  sendSnapshot: (state: GameState, target?: Target) => void
+  setOnSnapshot: (cb: (state: GameState, peerId: PeerId) => void) => void
   sendAction: (action: GameAction, target?: Target) => void
   setOnAction: (cb: (action: GameAction, peerId: PeerId) => void) => void
   /** Late-joiner handshake: a guest pings the host to request current state. */
@@ -36,6 +39,7 @@ export interface GameRoom {
 export function joinGameRoom(roomCode: string): GameRoom {
   const room = joinRoom({ appId: APP_ID }, roomCode)
   const state = room.makeAction<GameState>('state')
+  const snapshot = room.makeAction<GameState>('snapshot')
   const action = room.makeAction<GameAction>('action')
   const hello = room.makeAction<number>('hello')
 
@@ -44,6 +48,10 @@ export function joinGameRoom(roomCode: string): GameRoom {
     sendState: (s, target) => void state.send(s, target ? { target } : undefined),
     setOnState: (cb) => {
       state.onMessage = (data, ctx) => cb(data, ctx.peerId)
+    },
+    sendSnapshot: (s, target) => void snapshot.send(s, target ? { target } : undefined),
+    setOnSnapshot: (cb) => {
+      snapshot.onMessage = (data, ctx) => cb(data, ctx.peerId)
     },
     sendAction: (a, target) => void action.send(a, target ? { target } : undefined),
     setOnAction: (cb) => {

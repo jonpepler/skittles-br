@@ -16,13 +16,16 @@ const h = vi.hoisted(() => {
   const room: {
     selfId: string
     sentStates: GameState[]
+    sentSnapshots: GameState[]
     sentActions: unknown[]
     handlers: Record<string, (...args: never[]) => void>
     [key: string]: unknown
-  } = { selfId: 'HOST', sentStates: [], sentActions: [], handlers: {} }
+  } = { selfId: 'HOST', sentStates: [], sentSnapshots: [], sentActions: [], handlers: {} }
 
   room.sendState = (s: GameState) => room.sentStates.push(s)
   room.setOnState = (cb: never) => (room.handlers.onState = cb)
+  room.sendSnapshot = (s: GameState) => room.sentSnapshots.push(s)
+  room.setOnSnapshot = (cb: never) => (room.handlers.onSnapshot = cb)
   room.sendAction = (a: unknown) => room.sentActions.push(a)
   room.setOnAction = (cb: never) => (room.handlers.onAction = cb)
   room.sendHello = () => {}
@@ -70,7 +73,7 @@ describe('App end-to-end (fake transport)', () => {
 
     // Collect a green skittle — host applies it and rebroadcasts.
     await user.click(screen.getByRole('button', { name: /green: 0/ }))
-    expect(lastBroadcast().players['HOST']!.skittles.green).toBe(1)
+    expect(lastBroadcast().players['HOST']!.skittles!.green).toBe(1)
     expect(screen.getByRole('button', { name: /green: 1/ })).toBeInTheDocument()
 
     // Host triggers an event, which the generator produces and broadcasts.
@@ -103,7 +106,7 @@ describe('App end-to-end (fake transport)', () => {
         'GUEST'
       )
     )
-    expect(lastBroadcast().players['GUEST']!.skittles.red).toBe(1)
+    expect(lastBroadcast().players['GUEST']!.skittles!.red).toBe(1)
   })
 })
 
@@ -122,15 +125,17 @@ describe('host migration', () => {
     (h.room.handlers.onPeerLeave as (p: string) => void)(peerId)
 
   it('promotes the lowest-id guest when the host leaves, keeping state', () => {
-    // self is 'HOST'; the actual host 'AAAA' sorts lower, so when it leaves the
-    // sole remaining peer (self) must take over.
+    // self is 'HOST'; 'AAAA' sorts lower and is the host, 'ZZZZ' higher. When
+    // 'AAAA' leaves, the lowest remaining peer (self, 'HOST') must take over.
     const { result } = renderHook(() => useGameRoom('CODE', 'guest'))
     expect(result.current.isHost).toBe(false)
 
     let hosted = addPlayer(createGame('CODE', 'AAAA'), 'AAAA')
     hosted = addPlayer(hosted, 'HOST')
+    hosted = addPlayer(hosted, 'ZZZZ')
 
     act(() => onPeerJoin('AAAA'))
+    act(() => onPeerJoin('ZZZZ'))
     act(() => onState(hosted, 'AAAA'))
     expect(result.current.state?.hostId).toBe('AAAA')
     expect(result.current.isHost).toBe(false)
@@ -142,7 +147,7 @@ describe('host migration', () => {
     expect(result.current.state?.hostId).toBe('HOST')
     expect(result.current.state?.players['AAAA']).toBeUndefined()
     expect(result.current.state?.players['HOST']).toBeDefined()
-    // The new host announced itself.
+    // The new host announced itself to the remaining peer.
     expect(lastBroadcast().hostId).toBe('HOST')
   })
 })

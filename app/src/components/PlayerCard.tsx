@@ -17,13 +17,20 @@ export function PlayerCard({
           {player.name}
           {isSelf && <span className="player-card__you"> (you)</span>}
         </div>
-        <ul className="player-card__skittles">
-          {SKITTLE_COLOURS.map((colour) => (
-            <li key={colour} className={`skittle skittle--${colour}`}>
-              <span className="skittle__dot" /> {player.skittles[colour]}
-            </li>
-          ))}
-        </ul>
+        {player.skittles ? (
+          <ul className="player-card__skittles">
+            {SKITTLE_COLOURS.map((colour) => (
+              <li key={colour} className={`skittle skittle--${colour}`}>
+                <span className="skittle__dot" /> {player.skittles![colour]}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          // Not a neighbour — their skittles are hidden from you.
+          <div className="player-card__hidden" title="Only neighbours' skittles are visible">
+            🔒 hidden
+          </div>
+        )}
       </div>
     </div>
   )

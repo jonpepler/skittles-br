@@ -52,7 +52,7 @@ export function GameScreen({
         </section>
       )}
 
-      {state?.phase === 'active' && self && (
+      {state?.phase === 'active' && self?.skittles && (
         <section>
           <h2>Collect skittles</h2>
           <SkittlePanel skittles={self.skittles} onIncrement={game.incrementSkittle} />
