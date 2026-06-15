@@ -35,7 +35,7 @@ export function ContractSummary({
   viewerId
 }: {
   buckets: Buckets
-  players: Record<string, { name: string }>
+  players: Record<string, { name: string; flagSeed: string }>
   viewerId: string
 }) {
   const statements = summarise(buckets)
@@ -43,7 +43,12 @@ export function ContractSummary({
     return <p className="summary summary--empty">No terms yet — add a clause.</p>
   }
   const faction = (id: string) => (
-    <FactionTitle id={id} name={players[id]?.name ?? id} self={id === viewerId} size="sm" />
+    <FactionTitle
+      seed={players[id]?.flagSeed ?? id}
+      name={players[id]?.name ?? id}
+      self={id === viewerId}
+      size="sm"
+    />
   )
 
   return (

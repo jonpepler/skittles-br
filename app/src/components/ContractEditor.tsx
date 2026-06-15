@@ -52,7 +52,8 @@ export function ContractEditor({
   const [expiresIn, setExpiresIn] = useState(initialExpiresIn)
 
   const nameOf = (id: string): string => players.find((p) => p.id === id)?.name ?? id
-  const partyOptions = parties.map((id) => ({ id, name: nameOf(id) }))
+  const seedOf = (id: string): string => players.find((p) => p.id === id)?.flagSeed ?? id
+  const partyOptions = parties.map((id) => ({ id, name: nameOf(id), seed: seedOf(id) }))
 
   const patch = (key: string, p: Partial<ClauseDraft>): void =>
     setClauses(clauses.map((c) => (c.key === key ? { ...c, ...p } : c)))
@@ -73,7 +74,9 @@ export function ContractEditor({
     onSubmit(parties, onSign, onEvent, onReceive, expiresIn > 0 ? round + expiresIn : null)
   }
 
-  const playerMap = Object.fromEntries(players.map((p) => [p.id, { name: p.name }]))
+  const playerMap = Object.fromEntries(
+    players.map((p) => [p.id, { name: p.name, flagSeed: p.flagSeed }])
+  )
 
   return (
     <div className="editor">
@@ -81,7 +84,7 @@ export function ContractEditor({
         <span className="amt__kw">Parties:</span>
         {parties.map((id) => (
           <span key={id} className="editor__party">
-            <FactionTitle id={id} name={nameOf(id)} self={id === selfId} size="sm" />
+            <FactionTitle seed={seedOf(id)} name={nameOf(id)} self={id === selfId} size="sm" />
             {id !== selfId && (
               <button
                 className="chip chip--x"

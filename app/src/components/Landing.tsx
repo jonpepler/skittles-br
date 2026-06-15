@@ -14,7 +14,13 @@ export function Landing({ onStart }: { onStart: (roomCode: string, role: Role) =
 
   return (
     <div className="landing">
-      <h1 className="landing__title">Skittles</h1>
+      <h1 className="landing__title" aria-label="Skittles">
+        {'Skittles'.split('').map((ch, i) => (
+          <span key={i} className={`landing__letter landing__letter--${i % 5}`}>
+            {ch}
+          </span>
+        ))}
+      </h1>
       <p className="landing__tagline">A peer-to-peer game of flags and skittles.</p>
 
       <button className="btn btn--large" onClick={() => onStart(makeRoomCode(), 'host')}>

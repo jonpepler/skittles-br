@@ -42,7 +42,9 @@ export function ContractsPanel({
   const [draftKey, setDraftKey] = useState(0)
   const [countering, setCountering] = useState<string | null>(null)
 
-  const playerMap = Object.fromEntries(players.map((p) => [p.id, { name: p.name }]))
+  const playerMap = Object.fromEntries(
+    players.map((p) => [p.id, { name: p.name, flagSeed: p.flagSeed }])
+  )
 
   return (
     <section className="contracts">
@@ -75,7 +77,7 @@ export function ContractsPanel({
                     {c.parties.map((id) => (
                       <FactionTitle
                         key={id}
-                        id={id}
+                        seed={playerMap[id]?.flagSeed ?? id}
                         name={playerMap[id]?.name ?? id}
                         self={id === selfId}
                         size="sm"

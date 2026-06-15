@@ -17,7 +17,7 @@ export function PlayerCard({
       <FlagImage seed={player.flagSeed} className="player-card__flag" />
       <div className="player-card__body">
         <div className="player-card__name">
-          <FactionTitle id={player.id} name={player.name} self={isSelf} />
+          <FactionTitle seed={player.flagSeed} name={player.name} self={isSelf} />
           {player.out && <span className="player-card__out-badge"> OUT</span>}
         </div>
         {player.skittles ? (

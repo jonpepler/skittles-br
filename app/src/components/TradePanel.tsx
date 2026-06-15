@@ -71,6 +71,7 @@ export function TradePanel({
   const [receive, setReceive] = useState<SkittleSet>(emptySkittles())
 
   const nameOf = (id: string): string => players.find((p) => p.id === id)?.name ?? id
+  const seedOf = (id: string): string => players.find((p) => p.id === id)?.flagSeed ?? id
   const incoming = offers.filter((o) => o.to === selfId)
   const outgoing = offers.filter((o) => o.from === selfId)
 
@@ -114,7 +115,7 @@ export function TradePanel({
           {incoming.map((o) => (
             <div key={o.id} className="trade__offer">
               <span>
-                <FactionTitle id={o.from} name={nameOf(o.from)} size="sm" />: you receive{' '}
+                <FactionTitle seed={seedOf(o.from)} name={nameOf(o.from)} size="sm" />: you receive{' '}
                 <CostList set={o.give} />, you give <CostList set={o.receive} />
               </span>
               <span className="trade__offer-actions">
@@ -136,7 +137,7 @@ export function TradePanel({
           {outgoing.map((o) => (
             <div key={o.id} className="trade__offer">
               <span>
-                To <FactionTitle id={o.to} name={nameOf(o.to)} size="sm" />: you give{' '}
+                To <FactionTitle seed={seedOf(o.to)} name={nameOf(o.to)} size="sm" />: you give{' '}
                 <CostList set={o.give} />, you receive <CostList set={o.receive} />
               </span>
               <button className="btn" onClick={() => onCancel(o.id)}>
