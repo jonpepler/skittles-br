@@ -186,6 +186,13 @@ h3 {
 .complete h2 {
   font-size: 2.2rem;
 }
+.complete__winners {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
 
 /* ── Skittle collect buttons (coloured stickers) ─────────────────── */
 .skittle-panel {
@@ -293,7 +300,8 @@ h3 {
   margin: 0 0 1rem;
   font-weight: 600;
 }
-.game__duration {
+.game__duration,
+.game__rounds {
   width: 4.5rem;
   height: var(--chip-h);
   padding: 0 0.5rem;

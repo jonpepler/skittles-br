@@ -53,7 +53,9 @@ per round by the bundled event generator. Each event has a requirement and a
 reward. An event happens a host-configurable number of seconds after it's
 revealed, and in that window players trade skittles with anyone. On resolution,
 each player who can afford the requirement spends it for the reward, and anyone
-who can't pay the gate is eliminated. The last player standing wins.
+who can't pay the gate is eliminated. The game runs for a set number of rounds,
+and everyone still alive at the end wins. It isn't last one standing; the goal
+is simply to last.
 
 Trading is generalised into a declarative contracts system: smart-contracts for
 skittles, expressed as data rather than code. A contract bundles transfers whose

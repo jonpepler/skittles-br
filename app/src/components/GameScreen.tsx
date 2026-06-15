@@ -2,6 +2,7 @@ import { useGameRoom } from '../hooks/useGameRoom.js'
 import type { Role } from '../game/types.js'
 import { MIN_PLAYERS } from '../game/state.js'
 import { PlayerCard } from './PlayerCard.js'
+import { FactionTitle } from './FactionTitle.js'
 import { SkittlePanel } from './SkittlePanel.js'
 import { EventPanel } from './EventPanel.js'
 import { ShareInvite } from './ShareInvite.js'
@@ -64,6 +65,17 @@ export function GameScreen({
                   onChange={(e) => game.setEventDuration(Number(e.target.value))}
                 />
               </label>
+              <label className="game__setting">
+                Rounds (everyone alive at the end wins):{' '}
+                <input
+                  className="game__rounds"
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={state.maxRounds}
+                  onChange={(e) => game.setRounds(Number(e.target.value))}
+                />
+              </label>
               <button
                 className="btn btn--large"
                 disabled={!game.canStart}
@@ -93,14 +105,17 @@ export function GameScreen({
             )
           )}
 
+          <p className="game__hint">
+            Round {state.round} of {state.maxRounds}
+          </p>
           {state.event ? (
             <EventPanel event={state.event} round={state.round} endsAt={state.eventEndsAt} />
           ) : (
             <p className="game__hint">No event yet.</p>
           )}
-          {game.isHost && (
+          {game.isHost && state.round < state.maxRounds && (
             <button className="btn" onClick={game.triggerEvent}>
-              {state.event ? 'Next event' : 'Trigger event'}
+              {state.round === 0 ? 'Trigger first event' : 'Next event'}
             </button>
           )}
 
@@ -132,10 +147,20 @@ export function GameScreen({
       {state?.phase === 'complete' && (
         <section className="complete">
           <h2>Game over</h2>
-          {survivors.length === 1 ? (
-            <p>
-              <strong>{survivors[0]!.name}</strong> wins!
-            </p>
+          {survivors.length > 0 ? (
+            <>
+              <p>Everyone who lasted wins:</p>
+              <div className="complete__winners">
+                {survivors.map((p) => (
+                  <FactionTitle
+                    key={p.id}
+                    seed={p.flagSeed}
+                    name={p.name}
+                    self={p.id === selfId}
+                  />
+                ))}
+              </div>
+            </>
           ) : (
             <p>No survivors.</p>
           )}

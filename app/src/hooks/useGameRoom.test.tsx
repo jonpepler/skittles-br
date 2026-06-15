@@ -87,7 +87,7 @@ describe('App end-to-end (fake transport)', () => {
     expect(screen.getByRole('button', { name: /green: 1/ })).toBeInTheDocument()
 
     // Host triggers an event, which the generator produces and broadcasts.
-    await user.click(screen.getByRole('button', { name: 'Trigger event' }))
+    await user.click(screen.getByRole('button', { name: 'Trigger first event' }))
     expect(screen.getByText('Event 1')).toBeInTheDocument()
     expect(lastBroadcast().event).not.toBeNull()
   })

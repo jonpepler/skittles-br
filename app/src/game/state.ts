@@ -37,6 +37,9 @@ export const MIN_PLAYERS = 2
 /** Default reveal→resolve window for events, in seconds. */
 export const DEFAULT_EVENT_DURATION = 30
 
+/** Default number of events a game runs for. */
+export const DEFAULT_ROUNDS = 5
+
 /** Deterministic seed for a player's flag and civ name. */
 export function playerSeed(roomCode: string, id: string): string {
   return `${roomCode}:${id}`
@@ -53,6 +56,7 @@ export function createGame(roomCode: string, hostId: string): GameState {
     event: null,
     eventEndsAt: null,
     eventDuration: DEFAULT_EVENT_DURATION,
+    maxRounds: DEFAULT_ROUNDS,
     hideNonNeighbours: true,
     offers: [],
     nextOfferId: 0,
@@ -211,8 +215,11 @@ export function resolveEvent(state: GameState): GameState {
     if (p) resolved = { ...resolved, players: { ...resolved.players, [id]: { ...p, out: true } } }
   }
 
+  // The game runs to a fixed number of events. Everyone still alive at the end
+  // wins (it isn't last-one-standing). It also ends early if no one is left.
   const survivors = alivePlayers(resolved).length
-  return survivors <= 1 ? { ...resolved, phase: 'complete' } : resolved
+  const ended = survivors === 0 || resolved.round >= resolved.maxRounds
+  return ended ? { ...resolved, phase: 'complete' } : resolved
 }
 
 /**
@@ -248,6 +255,12 @@ export function applyAction(
       const seconds = Math.round(action.seconds)
       if (!Number.isFinite(seconds) || seconds < 5 || seconds > 300) return state
       return { ...state, eventDuration: seconds }
+    }
+    case 'setRounds': {
+      if (senderId !== state.hostId) return state
+      const rounds = Math.round(action.rounds)
+      if (!Number.isFinite(rounds) || rounds < 1 || rounds > 20) return state
+      return { ...state, maxRounds: rounds }
     }
     case 'setVisibility': {
       if (senderId !== state.hostId) return state

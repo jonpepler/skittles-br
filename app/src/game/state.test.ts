@@ -260,13 +260,32 @@ describe('event resolution', () => {
     expect(resolved.players['a']!.out).toBe(false)
   })
 
-  it('completes the game when one survivor remains', () => {
-    let game = activeWith('a', 'b')
+  it('does not end early when one player remains and rounds are left', () => {
+    let game = activeWith('a', 'b') // maxRounds 5, round 0
     game = giveSkittles(game, 'a', set({ red: 3 }))
     game = eventWith(game, set({ red: 2 }), emptySkittles())
+    const resolved = resolveEvent(game) // a survives, b eliminated, rounds remain
+    expect(resolved.phase).toBe('active')
+    expect(resolved.players['b']!.out).toBe(true)
+  })
+
+  it('ends after the final round, and everyone still alive wins', () => {
+    let game = activeWith('a', 'b')
+    game = giveSkittles(game, 'a', set({ red: 3 }))
+    game = giveSkittles(game, 'b', set({ red: 3 }))
+    game = { ...game, round: 5, maxRounds: 5 } // this is the last event
+    game = eventWith(game, set({ red: 1 }), emptySkittles())
     const resolved = resolveEvent(game)
     expect(resolved.phase).toBe('complete')
-    expect(alivePlayers(resolved).map((p) => p.id)).toEqual(['a'])
+    expect(alivePlayers(resolved).map((p) => p.id).sort()).toEqual(['a', 'b'])
+  })
+
+  it('ends immediately if everyone is eliminated', () => {
+    let game = activeWith('a', 'b') // both hold nothing
+    game = eventWith(game, set({ red: 1 }), emptySkittles())
+    const resolved = resolveEvent(game)
+    expect(resolved.phase).toBe('complete')
+    expect(alivePlayers(resolved)).toHaveLength(0)
   })
 })
 

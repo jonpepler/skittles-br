@@ -60,6 +60,7 @@ export interface GameRoomApi {
   reset: () => void
   triggerEvent: () => void
   setEventDuration: (seconds: number) => void
+  setRounds: (rounds: number) => void
   setVisibility: (hideNonNeighbours: boolean) => void
   proposeTrade: (to: string, give: SkittleSet, receive: SkittleSet) => void
   acceptTrade: (offerId: string) => void
@@ -320,6 +321,7 @@ export function useGameRoom(roomCode: string, role: Role): GameRoomApi {
     reset: useCallback(() => dispatch({ type: 'reset' }), [dispatch]),
     triggerEvent: useCallback(() => dispatch({ type: 'triggerEvent' }), [dispatch]),
     setEventDuration: useCallback((seconds: number) => dispatch({ type: 'setEventDuration', seconds }), [dispatch]),
+    setRounds: useCallback((rounds: number) => dispatch({ type: 'setRounds', rounds }), [dispatch]),
     setVisibility: useCallback((hideNonNeighbours: boolean) => dispatch({ type: 'setVisibility', hideNonNeighbours }), [dispatch]),
     proposeTrade: useCallback((to: string, give: SkittleSet, receive: SkittleSet) => dispatch({ type: 'proposeTrade', to, give, receive }), [dispatch]),
     acceptTrade: useCallback((offerId: string) => dispatch({ type: 'acceptTrade', offerId }), [dispatch]),

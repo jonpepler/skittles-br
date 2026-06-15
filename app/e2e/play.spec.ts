@@ -35,7 +35,7 @@ test.describe('cross-peer gameplay', () => {
     await host.getByRole('button', { name: 'Start game' }).click()
     await host.getByRole('heading', { name: 'Collect skittles' }).waitFor()
 
-    await host.getByRole('button', { name: 'Trigger event' }).click()
+    await host.getByRole('button', { name: 'Trigger first event' }).click()
 
     // Both the host and the guest see the same event with a countdown.
     await expect(host.getByText('Event 1')).toBeVisible()
@@ -94,7 +94,7 @@ test.describe('cross-peer gameplay', () => {
     await host.getByRole('button', { name: 'Propose contract' }).click()
     await guest.locator('.contracts__item').getByRole('button', { name: 'Sign' }).click()
 
-    await host.getByRole('button', { name: 'Trigger event' }).click()
+    await host.getByRole('button', { name: 'Trigger first event' }).click()
 
     // After the event resolves, the host is out and its red has been handed over
     // (would still be 3 if onEliminate hadn't fired, since elimination keeps

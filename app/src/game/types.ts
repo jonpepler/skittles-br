@@ -48,6 +48,8 @@ export type GameState = {
   eventEndsAt: number | null
   /** Configurable reveal→resolve window, in seconds. */
   eventDuration: number
+  /** Number of events the game runs for. Survivors after the last one win. */
+  maxRounds: number
   /** When true, players only see their own + neighbours' skittles. */
   hideNonNeighbours: boolean
   /** Open trade offers awaiting acceptance (quick two-party swaps). */
@@ -68,6 +70,7 @@ export type GameAction =
   | { type: 'incrementSkittle'; colour: SkittleColour }
   | { type: 'start' }
   | { type: 'setEventDuration'; seconds: number }
+  | { type: 'setRounds'; rounds: number }
   | { type: 'setVisibility'; hideNonNeighbours: boolean }
   | { type: 'triggerEvent' }
   | { type: 'resolveEvent' }
