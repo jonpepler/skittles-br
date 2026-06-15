@@ -75,6 +75,7 @@ export function ContractsPanel({
     parties: string[],
     onSign: Transfer[],
     onEvent: Transfer[],
+    onReceive: Transfer[],
     expiresRound: number | null
   ) => void
   onSign: (contractId: string) => void
@@ -92,7 +93,7 @@ export function ContractsPanel({
   const propose = (): void => {
     if (!to) return
     if (template === 'gift') {
-      onPropose([selfId, to], [{ from: selfId, to, give: nonEmpty(give) }], [], null)
+      onPropose([selfId, to], [{ from: selfId, to, give: nonEmpty(give) }], [], [], null)
     } else if (template === 'swap') {
       onPropose(
         [selfId, to],
@@ -100,6 +101,7 @@ export function ContractsPanel({
           { from: selfId, to, give: nonEmpty(give) },
           { from: to, to: selfId, give: nonEmpty(receive) }
         ],
+        [],
         [],
         null
       )
@@ -110,6 +112,7 @@ export function ContractsPanel({
         [selfId, to],
         [{ from: to, to: selfId, give: { [colour]: { all: colour } } }],
         [{ from: selfId, to, give: { [colour]: { eventReq: colour } } }],
+        [],
         null
       )
     }

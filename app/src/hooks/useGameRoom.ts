@@ -68,6 +68,7 @@ export interface GameRoomApi {
     parties: string[],
     onSign: Transfer[],
     onEvent: Transfer[],
+    onReceive: Transfer[],
     expiresRound: number | null
   ) => void
   signContract: (contractId: string) => void
@@ -313,7 +314,7 @@ export function useGameRoom(roomCode: string, role: Role): GameRoomApi {
     proposeTrade: useCallback((to: string, give: SkittleSet, receive: SkittleSet) => dispatch({ type: 'proposeTrade', to, give, receive }), [dispatch]),
     acceptTrade: useCallback((offerId: string) => dispatch({ type: 'acceptTrade', offerId }), [dispatch]),
     cancelTrade: useCallback((offerId: string) => dispatch({ type: 'cancelTrade', offerId }), [dispatch]),
-    proposeContract: useCallback((parties: string[], onSign: Transfer[], onEvent: Transfer[], expiresRound: number | null) => dispatch({ type: 'proposeContract', parties, onSign, onEvent, expiresRound }), [dispatch]),
+    proposeContract: useCallback((parties: string[], onSign: Transfer[], onEvent: Transfer[], onReceive: Transfer[], expiresRound: number | null) => dispatch({ type: 'proposeContract', parties, onSign, onEvent, onReceive, expiresRound }), [dispatch]),
     signContract: useCallback((contractId: string) => dispatch({ type: 'signContract', contractId }), [dispatch]),
     cancelContract: useCallback((contractId: string) => dispatch({ type: 'cancelContract', contractId }), [dispatch])
   }

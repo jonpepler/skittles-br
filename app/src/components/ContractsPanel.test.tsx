@@ -48,6 +48,7 @@ describe('ContractsPanel', () => {
       signed: ['them'],
       onSign: [{ from: 'them', to: 'me', give: { red: 2 } }],
       onEvent: [],
+      onReceive: [],
       expiresRound: null,
       signFired: false
     }

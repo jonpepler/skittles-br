@@ -79,6 +79,7 @@ export type GameAction =
       parties: string[]
       onSign: Transfer[]
       onEvent: Transfer[]
+      onReceive: Transfer[]
       expiresRound: number | null
     }
   | { type: 'signContract'; contractId: string }

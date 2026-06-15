@@ -11,8 +11,9 @@
  * data in this one shape — e.g. "give me all your reds, and I'll give you
  * enough reds for every event" is an onSign transfer plus an onEvent transfer.
  */
-import type { SkittleColour, GameEvent } from '../generators/event.js'
-import { addSkittles, canAfford, emptySkittles, fromColours } from './skittles.js'
+import type { SkittleColour, SkittleSet, GameEvent } from '../generators/event.js'
+import { SKITTLE_COLOURS } from '../generators/event.js'
+import { addSkittles, canAfford, emptySkittles, fromColours, subSkittles } from './skittles.js'
 import type { GameState, PlayerState } from './types.js'
 
 /** An expression that evaluates to a non-negative integer amount of a colour. */
@@ -20,6 +21,8 @@ export type AmountExpr =
   | number
   | { all: SkittleColour } // all of the giver's current holding of that colour
   | { eventReq: SkittleColour } // the current event's requirement for that colour
+  | { received: SkittleColour } // how much of that colour just arrived (onReceive)
+  | { percent: number; of: AmountExpr } // a percentage of another amount (floored)
   | { min: AmountExpr[] }
   | { sum: AmountExpr[] }
 
@@ -36,6 +39,9 @@ export type Contract = {
   onSign: Transfer[]
   /** Transfers applied every time an event is revealed (recurring). */
   onEvent: Transfer[]
+  /** Transfers applied when a party gains skittles via a trade/contract. The
+   *  transfer fires for the party named as its `from` (i.e. "when I receive…"). */
+  onReceive: Transfer[]
   /** Round after which the contract is dropped (null = no expiry). */
   expiresRound: number | null
   /** Whether the onSign clause has already fired. */
@@ -45,12 +51,19 @@ export type Contract = {
 export interface EvalContext {
   giver: PlayerState | undefined
   event: GameEvent | null
+  /** What the subject just received, for `received` expressions (onReceive). */
+  received?: SkittleSet
 }
+
+/** Bounds the onReceive cascade so mutually-triggering contracts can't loop. */
+const MAX_RECEIVE_DEPTH = 8
 
 function computeAmount(expr: AmountExpr, ctx: EvalContext): number {
   if (typeof expr === 'number') return expr
   if ('all' in expr) return ctx.giver?.skittles?.[expr.all] ?? 0
   if ('eventReq' in expr) return ctx.event?.requirement[expr.eventReq] ?? 0
+  if ('received' in expr) return ctx.received?.[expr.received] ?? 0
+  if ('percent' in expr) return (expr.percent / 100) * evalAmount(expr.of, ctx)
   if ('min' in expr) return Math.min(...expr.min.map((e) => evalAmount(e, ctx)))
   return expr.sum.reduce((acc: number, e) => acc + evalAmount(e, ctx), 0)
 }
@@ -77,7 +90,8 @@ export function allSigned(contract: Contract): boolean {
 export function applyTransfers(
   state: GameState,
   transfers: Transfer[],
-  event: GameEvent | null
+  event: GameEvent | null,
+  received?: SkittleSet
 ): GameState | null {
   if (transfers.length === 0) return state
 
@@ -88,7 +102,7 @@ export function applyTransfers(
     const from = state.players[t.from]
     const to = state.players[t.to]
     if (!from || !to || from.out || to.out || !from.skittles || !to.skittles) return null
-    const amounts = evalGive(t.give, { giver: from, event })
+    const amounts = evalGive(t.give, { giver: from, event, received })
     give[t.from] = addSkittles(give[t.from] ?? emptySkittles(), amounts)
     receive[t.to] = addSkittles(receive[t.to] ?? emptySkittles(), amounts)
   }
@@ -123,6 +137,45 @@ export function fireOnEvent(state: GameState, event: GameEvent): GameState {
     next = applyTransfers(next, contract.onEvent, event) ?? next
   }
   return next
+}
+
+/** Positive per-player skittle gains between two states (after − before). */
+export function diffGains(before: GameState, after: GameState): Record<string, SkittleSet> {
+  const gains: Record<string, SkittleSet> = {}
+  for (const [id, p] of Object.entries(after.players)) {
+    const b = before.players[id]?.skittles
+    const a = p.skittles
+    if (!a || !b) continue
+    const gain = subSkittles(a, b)
+    if (SKITTLE_COLOURS.some((c) => gain[c] > 0)) gains[id] = gain
+  }
+  return gains
+}
+
+/**
+ * Fire onReceive clauses in response to skittle gains. A clause fires for the
+ * party named as its `from` when that party gained, with the gain available to
+ * `received` expressions. Payouts cascade (a payout is itself a gain), bounded
+ * by MAX_RECEIVE_DEPTH so mutually-triggering contracts can't loop forever.
+ */
+export function fireReceives(
+  state: GameState,
+  gains: Record<string, SkittleSet>,
+  depth = 0
+): GameState {
+  if (depth >= MAX_RECEIVE_DEPTH) return state
+  let next = state
+  for (const [pid, gain] of Object.entries(gains)) {
+    for (const contract of next.contracts) {
+      if (!contract.parties.includes(pid)) continue
+      const transfers = contract.onReceive.filter((t) => t.from === pid)
+      if (transfers.length === 0) continue
+      const applied = applyTransfers(next, transfers, next.event, gain)
+      if (applied) next = applied
+    }
+  }
+  if (next === state) return next
+  return fireReceives(next, diffGains(state, next), depth + 1)
 }
 
 /** Drop contracts past their expiry round. */

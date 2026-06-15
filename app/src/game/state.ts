@@ -18,9 +18,11 @@ import {
 } from './skittles.js'
 import {
   allSigned,
+  diffGains,
   expireContracts,
   fireOnEvent,
   fireOnSign,
+  fireReceives,
   type Contract
 } from './contracts.js'
 import type { GameAction, GameState, PlayerState, TradeOffer } from './types.js'
@@ -248,8 +250,10 @@ export function applyAction(
         event,
         eventEndsAt: now + state.eventDuration * 1000
       }
-      // Fire recurring contract clauses against the new event, then expire.
-      return expireContracts(fireOnEvent(revealed, event))
+      // Fire recurring contract clauses against the new event, react to the
+      // resulting gains, then expire.
+      const fired = fireOnEvent(revealed, event)
+      return expireContracts(fireReceives(fired, diffGains(revealed, fired)))
     }
     case 'resolveEvent': {
       if (senderId !== state.hostId) return state
@@ -290,7 +294,8 @@ export function applyAction(
         offer.to,
         addSkittles(subSkittles(to!.skittles!, offer.receive), offer.give)
       )
-      return { ...next, offers: next.offers.filter((o) => o.id !== action.offerId) }
+      const swapped = { ...next, offers: next.offers.filter((o) => o.id !== action.offerId) }
+      return fireReceives(swapped, diffGains(state, swapped))
     }
     case 'cancelTrade': {
       const offer = state.offers.find((o) => o.id === action.offerId)
@@ -307,7 +312,7 @@ export function applyAction(
         const p = state.players[id]
         if (!p || p.out) return state
       }
-      const transfers = [...action.onSign, ...action.onEvent]
+      const transfers = [...action.onSign, ...action.onEvent, ...action.onReceive]
       if (!transfers.every((t) => unique.has(t.from) && unique.has(t.to))) return state
       const contract: Contract = {
         id: `contract-${state.nextContractId}`,
@@ -315,6 +320,7 @@ export function applyAction(
         signed: [senderId], // proposer signs on creation
         onSign: action.onSign,
         onEvent: action.onEvent,
+        onReceive: action.onReceive,
         expiresRound: action.expiresRound,
         signFired: false
       }
@@ -341,10 +347,13 @@ export function applyAction(
       // drop the contract if it has no recurring (onEvent) clause.
       const fired = fireOnSign(withSign, signedContract)
       const finalContract: Contract = { ...signedContract, signFired: true }
+      const recurring = finalContract.onEvent.length > 0 || finalContract.onReceive.length > 0
       const contracts = fired.contracts
         .map((c) => (c.id === finalContract.id ? finalContract : c))
-        .filter((c) => c.id !== finalContract.id || finalContract.onEvent.length > 0)
-      return { ...fired, contracts }
+        .filter((c) => c.id !== finalContract.id || recurring)
+      const result = { ...fired, contracts }
+      // React to skittles moved by the onSign clause.
+      return fireReceives(result, diffGains(state, result))
     }
     case 'cancelContract': {
       const contract = state.contracts.find((c) => c.id === action.contractId)

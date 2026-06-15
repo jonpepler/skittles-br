@@ -42,6 +42,14 @@ describe('evalAmount', () => {
     expect(evalAmount({ min: [{ all: 'red' }, 5] }, ctx)).toBe(5)
     expect(evalAmount({ sum: [2, { eventReq: 'red' }] }, ctx)).toBe(5)
   })
+
+  it('evaluates received amounts and floored percentages', () => {
+    const withReceived = { ...ctx, received: set({ red: 7 }) }
+    expect(evalAmount({ received: 'red' }, withReceived)).toBe(7)
+    expect(evalAmount({ percent: 50, of: { received: 'red' } }, withReceived)).toBe(3) // floor(3.5)
+    expect(evalAmount({ percent: 10, of: { all: 'red' } }, ctx)).toBe(0) // floor(0.7)
+    expect(evalAmount({ received: 'red' }, ctx)).toBe(0) // no receipt context
+  })
 })
 
 describe('contracts — sign and fire', () => {
@@ -53,6 +61,7 @@ describe('contracts — sign and fire', () => {
       parties: ['a', 'b'],
       onSign: [{ from: 'a', to: 'b', give: { red: 2 } }],
       onEvent: [],
+      onReceive: [],
       expiresRound: null
     })
     expect(game.contracts).toHaveLength(1)
@@ -77,6 +86,7 @@ describe('contracts — sign and fire', () => {
         { from: 'c', to: 'a', give: { yellow: 1 } }
       ],
       onEvent: [],
+      onReceive: [],
       expiresRound: null
     })
     const id = game.contracts[0]!.id
@@ -96,6 +106,7 @@ describe('contracts — sign and fire', () => {
       parties: ['a', 'b'],
       onSign: [{ from: 'a', to: 'b', give: { red: 5 } }],
       onEvent: [],
+      onReceive: [],
       expiresRound: null
     })
     const id = game.contracts[0]!.id
@@ -116,6 +127,7 @@ describe('contracts — recurring (the "cover my event reds" example)', () => {
       parties: ['a', 'b'],
       onSign: [{ from: 'b', to: 'a', give: { red: { all: 'red' } } }],
       onEvent: [{ from: 'a', to: 'b', give: { red: { eventReq: 'red' } } }],
+      onReceive: [],
       expiresRound: null
     })
     const id = game.contracts[0]!.id
@@ -141,6 +153,7 @@ describe('contracts — recurring (the "cover my event reds" example)', () => {
       parties: ['a', 'b'],
       onSign: [],
       onEvent: [{ from: 'a', to: 'b', give: { red: 1 } }],
+      onReceive: [],
       expiresRound: 1
     })
     const id = game.contracts[0]!.id
@@ -149,6 +162,70 @@ describe('contracts — recurring (the "cover my event reds" example)', () => {
     expect(game.contracts).toHaveLength(1)
     game = applyAction(game, 'a', { type: 'triggerEvent' }, 2000) // round 2 > expiry: dropped
     expect(game.contracts).toHaveLength(0)
+  })
+})
+
+describe('contracts — onReceive (percentage cut)', () => {
+  it('pays a cut every time the party receives a colour in a trade', () => {
+    let game = activeWith('a', 'b', 'c')
+    game = give(game, 'c', set({ red: 4 }))
+
+    // "Every time I (a) receive red in a trade, you (b) get 50% of it."
+    game = applyAction(game, 'a', {
+      type: 'proposeContract',
+      parties: ['a', 'b'],
+      onSign: [],
+      onEvent: [],
+      onReceive: [{ from: 'a', to: 'b', give: { red: { percent: 50, of: { received: 'red' } } } }],
+      expiresRound: null
+    })
+    const id = game.contracts[0]!.id
+    game = applyAction(game, 'b', { type: 'signContract', contractId: id })
+    expect(game.contracts).toHaveLength(1) // onReceive keeps it alive
+
+    // c gifts 4 red to a (a trade where a gives nothing back).
+    game = applyAction(game, 'c', {
+      type: 'proposeTrade',
+      to: 'a',
+      give: set({ red: 4 }),
+      receive: set({})
+    })
+    const offerId = game.offers[0]!.id
+    game = applyAction(game, 'a', { type: 'acceptTrade', offerId })
+
+    // a received 4 red → pays b 50% (2). a keeps 2, b gets 2.
+    expect(game.players['a']!.skittles!.red).toBe(2)
+    expect(game.players['b']!.skittles!.red).toBe(2)
+  })
+
+  it('does not loop forever on mutually-triggering cuts', () => {
+    let game = activeWith('a', 'b', 'c')
+    game = give(game, 'c', set({ red: 100 }))
+    // a → b and b → a both pay 50% of received red: a cascade that must terminate.
+    game = applyAction(game, 'a', {
+      type: 'proposeContract',
+      parties: ['a', 'b'],
+      onSign: [],
+      onEvent: [],
+      onReceive: [
+        { from: 'a', to: 'b', give: { red: { percent: 50, of: { received: 'red' } } } },
+        { from: 'b', to: 'a', give: { red: { percent: 50, of: { received: 'red' } } } }
+      ],
+      expiresRound: null
+    })
+    const id = game.contracts[0]!.id
+    game = applyAction(game, 'b', { type: 'signContract', contractId: id })
+
+    game = applyAction(game, 'c', {
+      type: 'proposeTrade',
+      to: 'a',
+      give: set({ red: 100 }),
+      receive: set({})
+    })
+    const offerId = game.offers[0]!.id
+    // Should terminate (bounded cascade) rather than hang.
+    game = applyAction(game, 'a', { type: 'acceptTrade', offerId })
+    expect(game.players['a']!.skittles!.red).toBeGreaterThanOrEqual(0)
   })
 })
 
@@ -161,6 +238,7 @@ describe('contracts — authority', () => {
       parties: ['a', 'b'],
       onSign: [{ from: 'a', to: 'b', give: { red: 1 } }],
       onEvent: [],
+      onReceive: [],
       expiresRound: null
     })
     const id = game.contracts[0]!.id
