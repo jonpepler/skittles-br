@@ -4,6 +4,7 @@ import { MIN_PLAYERS } from '../game/state.js'
 import { PlayerCard } from './PlayerCard.js'
 import { SkittlePanel } from './SkittlePanel.js'
 import { EventPanel } from './EventPanel.js'
+import { ShareInvite } from './ShareInvite.js'
 
 export function GameScreen({
   roomCode,
@@ -38,9 +39,7 @@ export function GameScreen({
 
       {state?.phase === 'lobby' && (
         <section>
-          <p className="game__hint">
-            Share code <strong>{roomCode}</strong> to invite players.
-          </p>
+          <ShareInvite code={roomCode} />
           {game.isHost ? (
             <button className="btn btn--large" disabled={!game.canStart} onClick={game.start}>
               {game.canStart

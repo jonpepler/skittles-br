@@ -1,15 +1,22 @@
 import { describe, it, expect } from 'vitest'
-import { makeRoomCode, normaliseRoomCode } from './roomCode.js'
+import { makeRoomCode, normaliseRoomCode, ROOM_CODE_WORDS } from './roomCode.js'
 
 describe('makeRoomCode', () => {
-  it('has the requested length (default 5)', () => {
-    expect(makeRoomCode()).toHaveLength(5)
-    expect(makeRoomCode(8)).toHaveLength(8)
+  it('produces three lowercase words joined by hyphens', () => {
+    for (let i = 0; i < 100; i++) {
+      expect(makeRoomCode()).toMatch(/^[a-z]+-[a-z]+-[a-z]+$/)
+    }
   })
 
-  it('uses only unambiguous uppercase characters', () => {
-    for (let i = 0; i < 200; i++) {
-      expect(makeRoomCode(10)).toMatch(/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]+$/)
+  it('honours a custom word count', () => {
+    expect(makeRoomCode(2).split('-')).toHaveLength(2)
+    expect(makeRoomCode(4).split('-')).toHaveLength(4)
+  })
+
+  it('only uses words from the list', () => {
+    const allowed = new Set(ROOM_CODE_WORDS)
+    for (const word of makeRoomCode(4).split('-')) {
+      expect(allowed.has(word)).toBe(true)
     }
   })
 
@@ -20,7 +27,15 @@ describe('makeRoomCode', () => {
 })
 
 describe('normaliseRoomCode', () => {
-  it('trims and uppercases', () => {
-    expect(normaliseRoomCode('  abc4e ')).toBe('ABC4E')
+  it('lowercases and turns spaces into hyphens', () => {
+    expect(normaliseRoomCode('  Brave Otter Maple ')).toBe('brave-otter-maple')
+  })
+
+  it('collapses repeats and strips stray characters', () => {
+    expect(normaliseRoomCode('amber__otter--canyon!')).toBe('amber-otter-canyon')
+  })
+
+  it('accepts an already-valid code unchanged', () => {
+    expect(normaliseRoomCode('amber-otter-canyon')).toBe('amber-otter-canyon')
   })
 })

@@ -42,6 +42,8 @@ describe('App end-to-end (fake transport)', () => {
     h.room.sentStates = []
     h.room.sentActions = []
     h.room.handlers = {}
+    // Clear any ?room= the previous test left in the URL (would auto-join).
+    window.history.replaceState(null, '', '/')
   })
 
   it('hosts a game from create through to collecting a skittle', async () => {

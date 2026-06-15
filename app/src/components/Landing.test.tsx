@@ -20,15 +20,15 @@ describe('Landing', () => {
     expect(onStart).toHaveBeenCalledTimes(1)
     const [code, role] = onStart.mock.calls[0]!
     expect(role).toBe('host')
-    expect(code).toMatch(/^[A-Z0-9]{5}$/)
+    expect(code).toMatch(/^[a-z]+-[a-z]+-[a-z]+$/)
   })
 
   it('joins an existing game as guest with a normalised code', async () => {
     const onStart = vi.fn()
     render(<Landing onStart={onStart} />)
-    await userEvent.type(screen.getByLabelText('Room code'), ' abcde ')
+    await userEvent.type(screen.getByLabelText('Room code'), ' Brave Otter Maple ')
     await userEvent.click(screen.getByRole('button', { name: 'Join' }))
-    expect(onStart).toHaveBeenCalledWith('ABCDE', 'guest')
+    expect(onStart).toHaveBeenCalledWith('brave-otter-maple', 'guest')
   })
 
   it('disables Join until a code is entered', () => {
