@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { SKITTLE_COLOURS, type SkittleColour } from '../generators/event.js'
 import type { PlayerState } from '../game/types.js'
 import type { Transfer } from '../game/contracts.js'
 import { AmountChip } from './AmountChip.js'
+import { ColourPicker } from './ColourPicker.js'
 import {
   type ClauseDraft,
   type Trigger,
@@ -121,10 +121,19 @@ export function ContractEditor({
       </div>
 
       {clauses.map((c) => (
-        <div key={c.key} className="clause-row">
+        <div key={c.key} className={`clause-card clause-card--${c.trigger}`}>
+          {clauses.length > 1 && (
+            <button
+              className="clause-card__x"
+              aria-label="Remove clause"
+              onClick={() => setClauses(clauses.filter((x) => x.key !== c.key))}
+            >
+              ✕
+            </button>
+          )}
           <div className="clause">
             <select
-              className="chip"
+              className="chip chip--when"
               aria-label="When"
               value={c.trigger}
               onChange={(e) => patch(c.key, { trigger: e.target.value as Trigger })}
@@ -134,18 +143,11 @@ export function ContractEditor({
               <option value="receive">Each time… receives</option>
             </select>
             {c.trigger === 'receive' && (
-              <select
-                className="chip"
-                aria-label="Received colour"
+              <ColourPicker
+                label="Received colour"
                 value={c.receiveColour}
-                onChange={(e) => patch(c.key, { receiveColour: e.target.value as SkittleColour })}
-              >
-                {SKITTLE_COLOURS.map((col) => (
-                  <option key={col} value={col}>
-                    {col}
-                  </option>
-                ))}
-              </select>
+                onChange={(col) => patch(c.key, { receiveColour: col })}
+              />
             )}
             <PartySelect label="Giver" value={c.from} onChange={(v) => patch(c.key, { from: v })} />
             <span className="amt__kw">gives</span>
@@ -155,27 +157,11 @@ export function ContractEditor({
               defaultColour={c.colour}
               onChange={(amount) => patch(c.key, { amount })}
             />
-            <select
-              className="chip"
-              aria-label="Colour"
+            <ColourPicker
+              label="Colour"
               value={c.colour}
-              onChange={(e) => patch(c.key, { colour: e.target.value as SkittleColour })}
-            >
-              {SKITTLE_COLOURS.map((col) => (
-                <option key={col} value={col}>
-                  {col}
-                </option>
-              ))}
-            </select>
-            {clauses.length > 1 && (
-              <button
-                className="chip chip--x"
-                aria-label="Remove clause"
-                onClick={() => setClauses(clauses.filter((x) => x.key !== c.key))}
-              >
-                ✕
-              </button>
-            )}
+              onChange={(col) => patch(c.key, { colour: col })}
+            />
           </div>
           <p className="clause__preview">{describeClause(c, nameOf)}</p>
         </div>

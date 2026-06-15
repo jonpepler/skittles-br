@@ -1,5 +1,6 @@
-import { SKITTLE_COLOURS, type SkittleColour } from '../generators/event.js'
+import type { SkittleColour } from '../generators/event.js'
 import type { AmountExpr } from '../game/contracts.js'
+import { ColourPicker } from './ColourPicker.js'
 
 type Kind = 'number' | 'all' | 'eventReq' | 'received' | 'percent' | 'min' | 'sum'
 
@@ -33,31 +34,6 @@ function defaultFor(kind: Kind, colour: SkittleColour): AmountExpr {
 }
 
 const clampPct = (n: number): number => Math.min(100, Math.max(0, Math.floor(n || 0)))
-
-function ColourChip({
-  label,
-  value,
-  onChange
-}: {
-  label: string
-  value: SkittleColour
-  onChange: (c: SkittleColour) => void
-}) {
-  return (
-    <select
-      className="chip"
-      aria-label={label}
-      value={value}
-      onChange={(e) => onChange(e.target.value as SkittleColour)}
-    >
-      {SKITTLE_COLOURS.map((c) => (
-        <option key={c} value={c}>
-          {c}
-        </option>
-      ))}
-    </select>
-  )
-}
 
 /** A composable, nestable editor for one amount expression (a "token block"). */
 export function AmountChip({
@@ -102,7 +78,7 @@ export function AmountChip({
       )}
 
       {(kind === 'all' || kind === 'eventReq' || kind === 'received') && (
-        <ColourChip
+        <ColourPicker
           label={`${label} colour`}
           value={(value as Record<string, SkittleColour>)[kind]!}
           onChange={(c) => onChange({ [kind]: c } as AmountExpr)}

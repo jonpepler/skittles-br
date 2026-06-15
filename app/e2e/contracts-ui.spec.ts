@@ -1,6 +1,6 @@
 import { test } from '@playwright/test'
 
-// Drives two peers into the active phase (local transport) and screenshots the
+// Drives peers into the active phase (local transport) and screenshots the
 // command-style contract editor under different statements, for visual review.
 test.describe('contract/trade UI', () => {
   test('renders the command editor under various statements', async ({ browser }) => {
@@ -10,15 +10,17 @@ test.describe('contract/trade UI', () => {
     })
 
     const host = await ctx.newPage()
-    await host.setViewportSize({ width: 940, height: 1200 })
+    await host.setViewportSize({ width: 960, height: 1200 })
     await host.goto('/')
     await host.getByRole('button', { name: 'Create game' }).click()
     const code = (await host.locator('.game__code').first().innerText()).trim()
 
-    const guest = await ctx.newPage()
-    await guest.goto(`/?room=${code}`)
+    const g1 = await ctx.newPage()
+    await g1.goto(`/?room=${code}`)
+    const g2 = await ctx.newPage()
+    await g2.goto(`/?room=${code}`)
 
-    await host.locator('.player-card').nth(1).waitFor({ timeout: 15_000 })
+    await host.locator('.player-card').nth(2).waitFor({ timeout: 15_000 })
     await host.getByRole('button', { name: 'Start game' }).click()
     await host.getByRole('heading', { name: 'Collect skittles' }).waitFor()
 
@@ -27,18 +29,18 @@ test.describe('contract/trade UI', () => {
 
     // 1. Default clause → a one-shot gift.
     await host.getByLabel('amount', { exact: true }).fill('3')
-    await host.getByLabel('Colour').selectOption('green')
+    await host.getByLabel('Colour green').click()
     await shot('contract-1-gift')
 
     // 2. Recurring: cover the event's required colour each event.
     await host.getByLabel('When').selectOption('event')
     await host.getByLabel('amount kind').selectOption('eventReq')
-    await host.getByLabel('amount colour').selectOption('red')
+    await host.getByLabel('amount colour red').click()
     await shot('contract-2-eventcover')
 
     // 3. Reactive: each time I receive red, give 50% of it.
     await host.getByLabel('When').selectOption('receive')
-    await host.getByLabel('Received colour').selectOption('red')
+    await host.getByLabel('Received colour red').click()
     await host.getByLabel('amount kind').selectOption('percent')
     await host.getByLabel('amount percent').fill('50')
     await shot('contract-3-receive-percent')
@@ -47,11 +49,12 @@ test.describe('contract/trade UI', () => {
     await host.getByLabel('amount kind').selectOption('min')
     await shot('contract-4-nested')
 
-    // 5. Multiple stacked clauses.
+    // 5. Add a third party and a second clause.
+    await host.getByRole('button', { name: '+ party' }).click()
     await host.getByRole('button', { name: '+ Add clause' }).click()
-    await shot('contract-5-multiclause')
+    await shot('contract-5-parties-multiclause')
 
-    // 6. Propose it, then show it in the active-contracts list.
+    // 6. Propose, then show it in the active-contracts list.
     await host.getByRole('button', { name: 'Propose contract' }).click()
     await host.locator('.contracts__item').first().waitFor()
     await shot('contract-6-active')
