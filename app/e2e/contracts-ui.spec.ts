@@ -1,16 +1,16 @@
 import { test } from '@playwright/test'
 
 // Drives two peers into the active phase (local transport) and screenshots the
-// contract/trade UI under different statements, for visual review.
+// command-style contract editor under different statements, for visual review.
 test.describe('contract/trade UI', () => {
-  test('renders the builder under various statements', async ({ browser }) => {
+  test('renders the command editor under various statements', async ({ browser }) => {
     const ctx = await browser.newContext()
     await ctx.addInitScript(() => {
       ;(window as unknown as { __SKITTLES_TRANSPORT__?: string }).__SKITTLES_TRANSPORT__ = 'local'
     })
 
     const host = await ctx.newPage()
-    await host.setViewportSize({ width: 900, height: 1000 })
+    await host.setViewportSize({ width: 940, height: 1200 })
     await host.goto('/')
     await host.getByRole('button', { name: 'Create game' }).click()
     const code = (await host.locator('.game__code').first().innerText()).trim()
@@ -23,36 +23,45 @@ test.describe('contract/trade UI', () => {
     await host.getByRole('heading', { name: 'Collect skittles' }).waitFor()
 
     const contracts = host.locator('.contracts')
-    const shot = (name: string) =>
-      contracts.screenshot({ path: `e2e/screenshots/${name}.png` })
+    const shot = (name: string) => contracts.screenshot({ path: `e2e/screenshots/${name}.png` })
 
-    // 1. Default clause: a one-shot gift.
-    await host.getByLabel('Amount', { exact: true }).fill('3')
-    await host.getByLabel('Colour', { exact: true }).selectOption('green')
+    // 1. Default clause → a one-shot gift.
+    await host.getByLabel('amount', { exact: true }).fill('3')
+    await host.getByLabel('Colour').selectOption('green')
     await shot('contract-1-gift')
 
     // 2. Recurring: cover the event's required colour each event.
     await host.getByLabel('When').selectOption('event')
-    await host.getByLabel('Amount kind').selectOption('eventReq')
-    await host.getByLabel('Colour', { exact: true }).selectOption('red')
+    await host.getByLabel('amount kind').selectOption('eventReq')
+    await host.getByLabel('amount colour').selectOption('red')
     await shot('contract-2-eventcover')
 
-    // 3. Reactive: each time I receive red, you get 50%.
+    // 3. Reactive: each time I receive red, give 50% of it.
     await host.getByLabel('When').selectOption('receive')
     await host.getByLabel('Received colour').selectOption('red')
-    await host.getByLabel('Amount', { exact: true }).fill('50')
+    await host.getByLabel('amount kind').selectOption('percent')
+    await host.getByLabel('amount percent').fill('50')
     await shot('contract-3-receive-percent')
 
-    // 4. Multiple stacked clauses.
-    await host.getByRole('button', { name: '+ Add clause' }).click()
-    await shot('contract-4-multiclause')
+    // 4. Nested amount: smallest of (50% of received, a fixed number).
+    await host.getByLabel('amount kind').selectOption('min')
+    await shot('contract-4-nested')
 
-    // 5. Propose it, then show it in the active-contracts list.
+    // 5. Multiple stacked clauses.
+    await host.getByRole('button', { name: '+ Add clause' }).click()
+    await shot('contract-5-multiclause')
+
+    // 6. Propose it, then show it in the active-contracts list.
     await host.getByRole('button', { name: 'Propose contract' }).click()
     await host.locator('.contracts__item').first().waitFor()
-    await shot('contract-5-active')
+    await shot('contract-6-active')
 
-    // 6. The quick-trade panel.
+    // 7. Negotiation: open the counter editor on the received contract.
+    await host.locator('.contracts__item').getByRole('button', { name: 'Counter' }).click()
+    await host.locator('.contracts__item .editor').waitFor()
+    await shot('contract-7-counter')
+
+    // 8. The quick-trade panel.
     await host.locator('.trade').screenshot({ path: 'e2e/screenshots/trade-panel.png' })
 
     await ctx.close()

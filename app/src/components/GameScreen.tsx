@@ -121,6 +121,7 @@ export function GameScreen({
                 round={state.round}
                 onPropose={game.proposeContract}
                 onSign={game.signContract}
+                onRevise={game.reviseContract}
                 onCancel={game.cancelContract}
               />
             </>
