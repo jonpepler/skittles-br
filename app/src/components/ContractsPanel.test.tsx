@@ -103,8 +103,9 @@ describe('ContractsPanel command editor', () => {
     await userEvent.click(within(item).getByRole('button', { name: 'Send counter-offer' }))
 
     expect(onRevise).toHaveBeenCalledTimes(1)
-    const [id, onSign] = onRevise.mock.calls[0]!
+    const [id, parties, onSign] = onRevise.mock.calls[0]!
     expect(id).toBe('contract-0')
+    expect(parties).toEqual(['them', 'me'])
     expect(onSign).toEqual([{ from: 'them', to: 'me', give: { red: 1 } }])
   })
 })

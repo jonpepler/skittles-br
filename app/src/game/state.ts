@@ -362,11 +362,20 @@ export function applyAction(
       if (idx === -1) return state
       const c = state.contracts[idx]!
       if (!c.parties.includes(senderId) || c.signFired) return state
-      const unique = new Set(c.parties)
+      // A counter may also change the parties (so long as the reviser stays in).
+      const parties = action.parties
+      const unique = new Set(parties)
+      if (!parties.includes(senderId)) return state
+      if (unique.size < 2 || unique.size !== parties.length) return state
+      for (const id of parties) {
+        const p = state.players[id]
+        if (!p || p.out) return state
+      }
       const transfers = [...action.onSign, ...action.onEvent, ...action.onReceive]
       if (!transfers.every((t) => unique.has(t.from) && unique.has(t.to))) return state
       const revised: Contract = {
         ...c,
+        parties,
         onSign: action.onSign,
         onEvent: action.onEvent,
         onReceive: action.onReceive,

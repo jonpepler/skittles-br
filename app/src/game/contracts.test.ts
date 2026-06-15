@@ -251,6 +251,7 @@ describe('contracts — negotiation (revise / counter-offer)', () => {
     const countered = applyAction(game, 'b', {
       type: 'reviseContract',
       contractId: id,
+      parties: ['a', 'b'],
       onSign: [
         { from: 'a', to: 'b', give: { red: 2 } },
         { from: 'b', to: 'a', give: { green: 1 } }
@@ -270,6 +271,7 @@ describe('contracts — negotiation (revise / counter-offer)', () => {
     game = applyAction(game, 'b', {
       type: 'reviseContract',
       contractId: id,
+      parties: ['a', 'b'],
       onSign: [
         { from: 'a', to: 'b', give: { red: 2 } },
         { from: 'b', to: 'a', give: { green: 1 } }
@@ -282,6 +284,37 @@ describe('contracts — negotiation (revise / counter-offer)', () => {
     game = applyAction(game, 'a', { type: 'signContract', contractId: id })
     expect(game.players['a']!.skittles).toEqual(set({ red: 3, green: 1 }))
     expect(game.players['b']!.skittles).toEqual(set({ red: 2, green: 4 }))
+  })
+
+  it('can add a party in a counter-offer (all must re-sign)', () => {
+    let game = activeWith('a', 'b', 'c')
+    game = give(game, 'a', set({ red: 3 }))
+    game = applyAction(game, 'a', {
+      type: 'proposeContract',
+      parties: ['a', 'b'],
+      onSign: [{ from: 'a', to: 'b', give: { red: 1 } }],
+      onEvent: [],
+      onReceive: [],
+      expiresRound: null
+    })
+    const id = game.contracts[0]!.id
+    // b counters, pulling c in and routing a's red through to c.
+    game = applyAction(game, 'b', {
+      type: 'reviseContract',
+      contractId: id,
+      parties: ['a', 'b', 'c'],
+      onSign: [{ from: 'a', to: 'c', give: { red: 1 } }],
+      onEvent: [],
+      onReceive: [],
+      expiresRound: null
+    })
+    const c = game.contracts[0]!
+    expect(c.parties).toEqual(['a', 'b', 'c'])
+    expect(c.signed).toEqual(['b'])
+    game = applyAction(game, 'a', { type: 'signContract', contractId: id })
+    game = applyAction(game, 'c', { type: 'signContract', contractId: id })
+    expect(game.players['c']!.skittles).toEqual(set({ red: 1 }))
+    expect(game.players['a']!.skittles).toEqual(set({ red: 2 }))
   })
 
   it('rejects revision by a non-party', () => {
@@ -298,6 +331,7 @@ describe('contracts — negotiation (revise / counter-offer)', () => {
     const after = applyAction(withContract, 'c', {
       type: 'reviseContract',
       contractId: id,
+      parties: ['a', 'b'],
       onSign: [],
       onEvent: [],
       onReceive: [],

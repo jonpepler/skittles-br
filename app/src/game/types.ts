@@ -86,6 +86,7 @@ export type GameAction =
   | {
       type: 'reviseContract'
       contractId: string
+      parties: string[]
       onSign: Transfer[]
       onEvent: Transfer[]
       onReceive: Transfer[]

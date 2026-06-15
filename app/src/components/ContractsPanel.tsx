@@ -28,6 +28,7 @@ export function ContractsPanel({
   onSign: (contractId: string) => void
   onRevise: (
     contractId: string,
+    parties: string[],
     onSign: Transfer[],
     onEvent: Transfer[],
     onReceive: Transfer[],
@@ -90,9 +91,8 @@ export function ContractsPanel({
                       initialParties={c.parties}
                       initialClauses={contractToClauses(c)}
                       submitLabel="Send counter-offer"
-                      onSubmit={(_parties, onSignT, onEventT, onReceiveT, expires) => {
-                        // Revising keeps the original parties; clauses change.
-                        onRevise(c.id, onSignT, onEventT, onReceiveT, expires)
+                      onSubmit={(parties, onSignT, onEventT, onReceiveT, expires) => {
+                        onRevise(c.id, parties, onSignT, onEventT, onReceiveT, expires)
                         setCountering(null)
                       }}
                       onCancel={() => setCountering(null)}
