@@ -1,43 +1,21 @@
-// Friendly, speakable word list — codes are three words joined by hyphens
-// (e.g. "amber-otter-canyon"), easy to read aloud and type. ~110 words gives
-// over a million combinations.
-const WORDS = [
-  'amber', 'anchor', 'apple', 'arrow', 'aspen', 'autumn', 'badger', 'bamboo',
-  'beacon', 'birch', 'bison', 'bramble', 'brave', 'breeze', 'bronze', 'canyon',
-  'cedar', 'cinder', 'clever', 'clover', 'comet', 'copper', 'coral', 'cosmic',
-  'cricket', 'crimson', 'crystal', 'dawn', 'delta', 'dusk', 'eagle', 'ember',
-  'falcon', 'fern', 'fjord', 'forest', 'fox', 'galaxy', 'garnet', 'glacier',
-  'golden', 'granite', 'harbor', 'hazel', 'heron', 'hollow', 'indigo', 'island',
-  'ivory', 'jade', 'jasper', 'jolly', 'jungle', 'kestrel', 'lagoon', 'lantern',
-  'lily', 'lunar', 'lynx', 'maple', 'marble', 'meadow', 'meteor', 'mint',
-  'misty', 'nimble', 'nova', 'oasis', 'ocean', 'olive', 'onyx', 'orchid',
-  'otter', 'pebble', 'pine', 'prairie', 'quartz', 'quiet', 'quill', 'raven',
-  'reef', 'ripple', 'river', 'rowan', 'ruby', 'sable', 'saffron', 'sage',
-  'sandy', 'sequoia', 'shadow', 'silver', 'solar', 'spruce', 'storm', 'summit',
-  'sunny', 'thistle', 'thunder', 'tiger', 'topaz', 'tundra', 'velvet', 'violet',
-  'walnut', 'willow', 'winter', 'zephyr'
-]
+// Unambiguous alphanumeric alphabet — no 0/O/1/I to keep codes easy to read
+// and type. Four characters gives ~1M combinations.
+const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 
-function randomInt(maxExclusive: number): number {
-  const values = new Uint32Array(1)
+/** Generate a short alphanumeric room code, e.g. "A7KP". */
+export function makeRoomCode(length = 4): string {
+  const values = new Uint32Array(length)
   crypto.getRandomValues(values)
-  return values[0]! % maxExclusive
+  let out = ''
+  for (let i = 0; i < length; i++) {
+    out += ALPHABET[values[i]! % ALPHABET.length]
+  }
+  return out
 }
 
-/** Generate a human-readable room code like "amber-otter-canyon". */
-export function makeRoomCode(words = 3): string {
-  return Array.from({ length: words }, () => WORDS[randomInt(WORDS.length)]).join('-')
-}
-
-/** Normalise a user-entered code: lowercase, spaces → hyphens, strip noise. */
+/** Normalise a user-entered code: trim, uppercase, strip non-alphanumerics. */
 export function normaliseRoomCode(input: string): string {
-  return input
-    .trim()
-    .toLowerCase()
-    .replace(/[\s_]+/g, '-')
-    .replace(/[^a-z-]/g, '')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
+  return input.trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
 }
 
-export { WORDS as ROOM_CODE_WORDS }
+export { ALPHABET as ROOM_CODE_ALPHABET }

@@ -329,6 +329,22 @@ body {
 .player-card--self {
   border-color: var(--yellow);
 }
+.player-card--out {
+  opacity: 0.55;
+  filter: grayscale(0.7);
+}
+.player-card__out-badge {
+  color: var(--red);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+.complete {
+  text-align: center;
+  padding: 2rem 0;
+}
+.complete h2 {
+  font-size: 2rem;
+}
 .player-card__flag svg {
   display: block;
   width: 100%;

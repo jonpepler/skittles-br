@@ -61,6 +61,7 @@ export function createGame(roomCode: string, hostId: string): GameState {
     event: null,
     eventEndsAt: null,
     eventDuration: DEFAULT_EVENT_DURATION,
+    hideNonNeighbours: true,
     offers: [],
     nextOfferId: 0
   }
@@ -74,7 +75,8 @@ export function addPlayer(state: GameState, id: string): GameState {
     id,
     name: generateName(seed),
     flagSeed: seed,
-    skittles: emptySkittles()
+    skittles: emptySkittles(),
+    out: false
   }
   return {
     ...state,
@@ -125,16 +127,21 @@ export function visibleTo(state: GameState, viewerId: string): Set<string> {
  * not just UI hiding).
  */
 export function redactStateFor(state: GameState, viewerId: string): GameState {
+  // Trade offers are only ever relevant to the two parties.
+  const offers = state.offers.filter((o) => o.from === viewerId || o.to === viewerId)
+  if (!state.hideNonNeighbours) return { ...state, offers }
+
   const visible = visibleTo(state, viewerId)
   const players: Record<string, PlayerState> = {}
   for (const [id, p] of Object.entries(state.players)) {
     players[id] = visible.has(id) ? p : { ...p, skittles: null }
   }
-  return {
-    ...state,
-    players,
-    offers: state.offers.filter((o) => o.from === viewerId || o.to === viewerId)
-  }
+  return { ...state, players, offers }
+}
+
+/** Players still in the game (not eliminated). */
+export function alivePlayers(state: GameState): PlayerState[] {
+  return Object.values(state.players).filter((p) => !p.out)
 }
 
 /**
@@ -175,25 +182,27 @@ function withSkittles(
 }
 
 /**
- * Resolve the current event: each player who can afford the requirement spends
- * it for the reward; everyone else suffers the penalty. Clears the event.
+ * Resolve the current event: each surviving player who can afford the
+ * requirement spends it for the reward; anyone who can't pay the gate is
+ * eliminated (out of the game). Clears the event, and completes the game once
+ * one (or no) player remains.
  */
 export function resolveEvent(state: GameState): GameState {
   if (!state.event) return state
-  const { requirement, reward, penalty } = state.event
+  const { requirement, reward } = state.event
   const players: Record<string, PlayerState> = {}
   for (const [id, p] of Object.entries(state.players)) {
-    const skittles = p.skittles
-    if (!isValidSet(skittles)) {
+    if (p.out || !isValidSet(p.skittles)) {
       players[id] = p
       continue
     }
-    const next = canAfford(skittles, requirement)
-      ? addSkittles(subSkittles(skittles, requirement), reward)
-      : subSkittles(skittles, penalty)
-    players[id] = { ...p, skittles: next }
+    players[id] = canAfford(p.skittles, requirement)
+      ? { ...p, skittles: addSkittles(subSkittles(p.skittles, requirement), reward) }
+      : { ...p, out: true }
   }
-  return { ...state, players, event: null, eventEndsAt: null }
+  const resolved: GameState = { ...state, players, event: null, eventEndsAt: null }
+  const survivors = alivePlayers(resolved).length
+  return survivors <= 1 ? { ...resolved, phase: 'complete' } : resolved
 }
 
 /**
@@ -211,7 +220,7 @@ export function applyAction(
     case 'incrementSkittle': {
       if (state.phase !== 'active') return state
       const player = state.players[senderId]
-      if (!isValidSet(player?.skittles)) return state
+      if (player?.out || !isValidSet(player?.skittles)) return state
       if (!SKITTLE_COLOURS.includes(action.colour)) return state
       const colour = action.colour
       return withSkittles(state, senderId, {
@@ -230,6 +239,10 @@ export function applyAction(
       if (!Number.isFinite(seconds) || seconds < 5 || seconds > 300) return state
       return { ...state, eventDuration: seconds }
     }
+    case 'setVisibility': {
+      if (senderId !== state.hostId) return state
+      return { ...state, hideNonNeighbours: action.hideNonNeighbours }
+    }
     case 'triggerEvent': {
       if (senderId !== state.hostId) return state
       if (state.phase !== 'active') return state
@@ -246,7 +259,7 @@ export function applyAction(
       if (state.phase !== 'active') return state
       const from = state.players[senderId]
       const to = state.players[action.to]
-      if (!from || !to || senderId === action.to) return state
+      if (!from || !to || senderId === action.to || from.out || to.out) return state
       if (!isValidSet(action.give) || !isValidSet(action.receive)) return state
       if (!isValidSet(from.skittles) || !canAfford(from.skittles, action.give)) return state
       const offer: TradeOffer = {
@@ -263,6 +276,7 @@ export function applyAction(
       if (!offer || offer.to !== senderId) return state
       const from = state.players[offer.from]
       const to = state.players[offer.to]
+      if (from?.out || to?.out) return state
       if (!isValidSet(from?.skittles) || !isValidSet(to?.skittles)) return state
       if (!canAfford(from!.skittles!, offer.give)) return state
       if (!canAfford(to!.skittles!, offer.receive)) return state
@@ -287,7 +301,7 @@ export function applyAction(
       if (senderId !== state.hostId) return state
       const players: Record<string, PlayerState> = {}
       for (const [id, p] of Object.entries(state.players)) {
-        players[id] = { ...p, skittles: emptySkittles() }
+        players[id] = { ...p, skittles: emptySkittles(), out: false }
       }
       return {
         ...state,

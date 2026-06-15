@@ -9,7 +9,8 @@ const player = (id: string, name: string): PlayerState => ({
   id,
   name,
   flagSeed: id,
-  skittles: emptySkittles()
+  skittles: emptySkittles(),
+  out: false
 })
 
 const players = [player('me', 'Mine'), player('them', 'Theirs')]

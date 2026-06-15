@@ -40,17 +40,19 @@ Authority fails over automatically: if the host disconnects, the next-lowest
 peer promotes itself and adopts the last broadcast state (preserving phase and
 skittles), so a single departure doesn't end the game.
 
-Players are seated in a **ring** and can only see their own and their immediate
-neighbours' skittles — enforced by true redaction (the host sends each peer only
-what they're allowed to see), not just in the UI. Failover is preserved by
-privately snapshotting the full state to the designated successor.
+Players are seated in a **ring**. When the host enables it (a lobby toggle),
+each player can only see their own and their immediate neighbours' skittles —
+enforced by true redaction (the host sends each peer only what they're allowed
+to see), not just in the UI. Failover is preserved by privately snapshotting the
+full state to the designated successor.
 
 During the active phase the host triggers **events** — generated
 deterministically per round by the bundled event generator — which carry a
-requirement, reward and penalty. An event "happens" a host-configurable number
-of seconds after it's revealed; in that window players **trade** skittles with
+requirement and a reward. An event "happens" a host-configurable number of
+seconds after it's revealed; in that window players **trade** skittles with
 anyone (propose/accept/cancel). On resolution each player who can afford the
-requirement spends it for the reward, and everyone else takes the penalty.
+requirement spends it for the reward; anyone who can't pay the gate is
+**eliminated**, and the last player standing wins.
 
 The only thing that can't be fully static is **WebRTC signalling** — peers need
 a broker to find each other before connecting directly. That's handled by

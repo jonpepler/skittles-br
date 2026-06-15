@@ -47,7 +47,7 @@ test('two peers connect, start, and share skittle state (needs relay egress)', a
   await a.goto('/')
   await a.getByRole('button', { name: 'Create game' }).click()
   const code = (await a.locator('.game__code').first().innerText()).trim()
-  expect(code).toMatch(/^[a-z]+-[a-z]+-[a-z]+$/)
+  expect(code).toMatch(/^[A-Z0-9]{4}$/)
 
   await b.goto('/')
   await b.getByLabel('Room code').fill(code)

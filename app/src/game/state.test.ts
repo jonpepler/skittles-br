@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   MIN_PLAYERS,
   addPlayer,
+  alivePlayers,
   applyAction,
   canStart,
   createGame,
@@ -214,30 +215,69 @@ describe('neighbours and redaction', () => {
 
   it('only shows trade offers the viewer is party to', () => {
     let game = activeWith('a', 'b', 'c')
-    game = applyAction(game, 'a', { type: 'proposeTrade', to: 'b', give: set({ red: 0 }), receive: set({ green: 1 }) })
-    game = applyAction(game, 'b', { type: 'proposeTrade', to: 'c', give: set({ green: 0 }), receive: set({ red: 1 }) })
+    game = giveSkittles(game, 'a', set({ red: 1 }))
+    game = giveSkittles(game, 'b', set({ green: 1 }))
+    game = applyAction(game, 'a', { type: 'proposeTrade', to: 'b', give: set({ red: 1 }), receive: set({ green: 1 }) })
+    game = applyAction(game, 'b', { type: 'proposeTrade', to: 'c', give: set({ green: 1 }), receive: set({ red: 1 }) })
     expect(redactStateFor(game, 'a').offers).toHaveLength(1)
     expect(redactStateFor(game, 'c').offers).toHaveLength(1)
     expect(redactStateFor(game, 'b').offers).toHaveLength(2)
   })
+
+  it('shows everyone when neighbour-hiding is turned off', () => {
+    const game = { ...activeWith('a', 'b', 'c', 'd'), hideNonNeighbours: false }
+    const view = redactStateFor(game, 'a')
+    expect(view.players['c']!.skittles).not.toBeNull() // across the ring, but visible
+  })
 })
 
 describe('event resolution', () => {
+  const eventWith = (state: GameState, requirement: SkittleSet, reward: SkittleSet): GameState => ({
+    ...state,
+    event: { name: 'E', description: '', requirement, reward, penalty: emptySkittles() }
+  })
+
   it('spends the requirement for the reward when affordable', () => {
-    let game = activeWith('a', 'b')
+    let game = activeWith('a', 'b', 'c')
     game = giveSkittles(game, 'a', set({ red: 5, green: 2 }))
-    game = { ...game, event: { name: 'E', description: '', requirement: set({ red: 2 }), reward: set({ green: 3 }), penalty: set({ yellow: 1 }) } }
+    game = giveSkittles(game, 'b', set({ red: 5 }))
+    game = eventWith(game, set({ red: 2 }), set({ green: 3 }))
     const resolved = resolveEvent(game)
     expect(resolved.players['a']!.skittles).toEqual(set({ red: 3, green: 5 }))
+    expect(resolved.players['a']!.out).toBe(false)
     expect(resolved.event).toBeNull()
   })
 
-  it('applies the penalty (clamped at zero) when the requirement is unaffordable', () => {
-    let game = activeWith('a', 'b')
-    game = giveSkittles(game, 'a', set({ red: 1, yellow: 0 }))
-    game = { ...game, event: { name: 'E', description: '', requirement: set({ red: 3 }), reward: set({ green: 3 }), penalty: set({ red: 5, yellow: 2 }) } }
+  it('eliminates players who cannot pay the requirement, leaving their skittles', () => {
+    let game = activeWith('a', 'b', 'c')
+    game = giveSkittles(game, 'a', set({ red: 5 }))
+    game = giveSkittles(game, 'b', set({ red: 5 }))
+    game = giveSkittles(game, 'c', set({ red: 1 }))
+    game = eventWith(game, set({ red: 3 }), set({ green: 1 }))
     const resolved = resolveEvent(game)
-    expect(resolved.players['a']!.skittles).toEqual(set({ red: 0, yellow: 0 }))
+    expect(resolved.players['c']!.out).toBe(true)
+    expect(resolved.players['c']!.skittles).toEqual(set({ red: 1 }))
+    expect(resolved.players['a']!.out).toBe(false)
+  })
+
+  it('completes the game when one survivor remains', () => {
+    let game = activeWith('a', 'b')
+    game = giveSkittles(game, 'a', set({ red: 3 }))
+    game = eventWith(game, set({ red: 2 }), emptySkittles())
+    const resolved = resolveEvent(game)
+    expect(resolved.phase).toBe('complete')
+    expect(alivePlayers(resolved).map((p) => p.id)).toEqual(['a'])
+  })
+})
+
+describe('elimination', () => {
+  it('stops an eliminated player from collecting or trading', () => {
+    let game = activeWith('a', 'b')
+    game = { ...game, players: { ...game.players, a: { ...game.players['a']!, out: true } } }
+    expect(applyAction(game, 'a', { type: 'incrementSkittle', colour: 'red' })).toBe(game)
+    expect(
+      applyAction(game, 'a', { type: 'proposeTrade', to: 'b', give: set({}), receive: set({}) }).offers
+    ).toHaveLength(0)
   })
 })
 

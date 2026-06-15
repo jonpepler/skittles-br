@@ -10,12 +10,15 @@ export function PlayerCard({
   isSelf: boolean
 }) {
   return (
-    <div className={`player-card${isSelf ? ' player-card--self' : ''}`}>
+    <div
+      className={`player-card${isSelf ? ' player-card--self' : ''}${player.out ? ' player-card--out' : ''}`}
+    >
       <FlagImage seed={player.flagSeed} className="player-card__flag" />
       <div className="player-card__body">
         <div className="player-card__name">
           {player.name}
           {isSelf && <span className="player-card__you"> (you)</span>}
+          {player.out && <span className="player-card__out-badge"> OUT</span>}
         </div>
         {player.skittles ? (
           <ul className="player-card__skittles">

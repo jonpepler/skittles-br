@@ -19,6 +19,8 @@ export type PlayerState = {
   name: string
   flagSeed: string
   skittles: SkittleSet | null
+  /** Eliminated (couldn't pay an event's requirement). Stays visible as "out". */
+  out: boolean
 }
 
 /** A proposed swap: `from` gives `give` to `to`, and receives `receive` back. */
@@ -45,6 +47,8 @@ export type GameState = {
   eventEndsAt: number | null
   /** Configurable reveal→resolve window, in seconds. */
   eventDuration: number
+  /** When true, players only see their own + neighbours' skittles. */
+  hideNonNeighbours: boolean
   /** Open trade offers awaiting acceptance. */
   offers: TradeOffer[]
   /** Monotonic counter for assigning offer ids. */
@@ -59,6 +63,7 @@ export type GameAction =
   | { type: 'incrementSkittle'; colour: SkittleColour }
   | { type: 'start' }
   | { type: 'setEventDuration'; seconds: number }
+  | { type: 'setVisibility'; hideNonNeighbours: boolean }
   | { type: 'triggerEvent' }
   | { type: 'resolveEvent' }
   | { type: 'proposeTrade'; to: string; give: SkittleSet; receive: SkittleSet }

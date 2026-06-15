@@ -21,6 +21,7 @@ export function GameScreen({
 
   const players = state ? Object.values(state.players) : []
   const self = selfId && state ? state.players[selfId] : undefined
+  const survivors = players.filter((p) => !p.out)
 
   return (
     <div className="game">
@@ -43,6 +44,14 @@ export function GameScreen({
           <ShareInvite code={roomCode} />
           {game.isHost ? (
             <>
+              <label className="game__setting">
+                <input
+                  type="checkbox"
+                  checked={state.hideNonNeighbours}
+                  onChange={(e) => game.setVisibility(e.target.checked)}
+                />{' '}
+                Hide non-neighbours' skittles
+              </label>
               <label className="game__setting">
                 Event window (seconds):{' '}
                 <input
@@ -70,10 +79,18 @@ export function GameScreen({
         </section>
       )}
 
-      {state?.phase === 'active' && self?.skittles && (
+      {state?.phase === 'active' && self && (
         <section>
-          <h2>Collect skittles</h2>
-          <SkittlePanel skittles={self.skittles} onIncrement={game.incrementSkittle} />
+          {self.out ? (
+            <p className="game__hint">You've been eliminated — spectating.</p>
+          ) : (
+            self.skittles && (
+              <>
+                <h2>Collect skittles</h2>
+                <SkittlePanel skittles={self.skittles} onIncrement={game.incrementSkittle} />
+              </>
+            )
+          )}
 
           {state.event ? (
             <EventPanel event={state.event} round={state.round} endsAt={state.eventEndsAt} />
@@ -86,14 +103,34 @@ export function GameScreen({
             </button>
           )}
 
-          <TradePanel
-            players={players}
-            selfId={selfId!}
-            offers={state.offers}
-            onPropose={game.proposeTrade}
-            onAccept={game.acceptTrade}
-            onCancel={game.cancelTrade}
-          />
+          {!self.out && (
+            <TradePanel
+              players={players}
+              selfId={selfId!}
+              offers={state.offers}
+              onPropose={game.proposeTrade}
+              onAccept={game.acceptTrade}
+              onCancel={game.cancelTrade}
+            />
+          )}
+        </section>
+      )}
+
+      {state?.phase === 'complete' && (
+        <section className="complete">
+          <h2>Game over</h2>
+          {survivors.length === 1 ? (
+            <p>
+              <strong>{survivors[0]!.name}</strong> wins!
+            </p>
+          ) : (
+            <p>No survivors.</p>
+          )}
+          {game.isHost && (
+            <button className="btn btn--large" onClick={game.reset}>
+              Play again
+            </button>
+          )}
         </section>
       )}
 

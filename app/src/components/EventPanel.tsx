@@ -27,16 +27,14 @@ function Countdown({ endsAt }: { endsAt: number }) {
 
   const seconds = Math.ceil(remaining / 1000)
   return (
-    <div className="event__timer">
-      {remaining > 0 ? `Happens in ${seconds}s — trade now!` : 'Resolving…'}
-    </div>
+    <div className="event__timer">{remaining > 0 ? `Resolves in ${seconds}s` : 'Resolving'}</div>
   )
 }
 
 /**
  * Displays the event currently in play. When it resolves, each player who can
- * afford the requirement spends it for the reward; everyone else takes the
- * penalty (see resolveEvent).
+ * afford the requirement spends it for the reward; anyone who can't pay the
+ * gate is eliminated (see resolveEvent).
  */
 export function EventPanel({
   event,
@@ -62,11 +60,8 @@ export function EventPanel({
         <dd>
           <SkittleCosts set={event.reward} />
         </dd>
-        <dt>Penalty</dt>
-        <dd>
-          <SkittleCosts set={event.penalty} />
-        </dd>
       </dl>
+      <p className="event__gate">Can't pay the requirement when it resolves? You're out.</p>
     </div>
   )
 }

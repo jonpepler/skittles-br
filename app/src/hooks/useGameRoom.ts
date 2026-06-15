@@ -22,8 +22,10 @@ export interface GameRoomApi {
   canStart: boolean
   incrementSkittle: (colour: SkittleColour) => void
   start: () => void
+  reset: () => void
   triggerEvent: () => void
   setEventDuration: (seconds: number) => void
+  setVisibility: (hideNonNeighbours: boolean) => void
   proposeTrade: (to: string, give: SkittleSet, receive: SkittleSet) => void
   acceptTrade: (offerId: string) => void
   cancelTrade: (offerId: string) => void
@@ -182,8 +184,10 @@ export function useGameRoom(roomCode: string, role: Role): GameRoomApi {
     canStart: isHost && state ? canStartGame(state) : false,
     incrementSkittle: useCallback((colour: SkittleColour) => dispatch({ type: 'incrementSkittle', colour }), [dispatch]),
     start: useCallback(() => dispatch({ type: 'start' }), [dispatch]),
+    reset: useCallback(() => dispatch({ type: 'reset' }), [dispatch]),
     triggerEvent: useCallback(() => dispatch({ type: 'triggerEvent' }), [dispatch]),
     setEventDuration: useCallback((seconds: number) => dispatch({ type: 'setEventDuration', seconds }), [dispatch]),
+    setVisibility: useCallback((hideNonNeighbours: boolean) => dispatch({ type: 'setVisibility', hideNonNeighbours }), [dispatch]),
     proposeTrade: useCallback((to: string, give: SkittleSet, receive: SkittleSet) => dispatch({ type: 'proposeTrade', to, give, receive }), [dispatch]),
     acceptTrade: useCallback((offerId: string) => dispatch({ type: 'acceptTrade', offerId }), [dispatch]),
     cancelTrade: useCallback((offerId: string) => dispatch({ type: 'cancelTrade', offerId }), [dispatch])
