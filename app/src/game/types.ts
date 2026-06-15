@@ -1,4 +1,5 @@
 import type { GameEvent, SkittleColour, SkittleSet } from '../generators/event.js'
+import type { Contract, Transfer } from './contracts.js'
 
 /** Which side of the connection a client is playing. */
 export type Role = 'host' | 'guest'
@@ -49,10 +50,14 @@ export type GameState = {
   eventDuration: number
   /** When true, players only see their own + neighbours' skittles. */
   hideNonNeighbours: boolean
-  /** Open trade offers awaiting acceptance. */
+  /** Open trade offers awaiting acceptance (quick two-party swaps). */
   offers: TradeOffer[]
   /** Monotonic counter for assigning offer ids. */
   nextOfferId: number
+  /** Declarative contracts (the general trade system). */
+  contracts: Contract[]
+  /** Monotonic counter for assigning contract ids. */
+  nextContractId: number
 }
 
 /**
@@ -69,4 +74,13 @@ export type GameAction =
   | { type: 'proposeTrade'; to: string; give: SkittleSet; receive: SkittleSet }
   | { type: 'acceptTrade'; offerId: string }
   | { type: 'cancelTrade'; offerId: string }
+  | {
+      type: 'proposeContract'
+      parties: string[]
+      onSign: Transfer[]
+      onEvent: Transfer[]
+      expiresRound: number | null
+    }
+  | { type: 'signContract'; contractId: string }
+  | { type: 'cancelContract'; contractId: string }
   | { type: 'reset' }

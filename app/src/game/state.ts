@@ -8,42 +8,31 @@
  */
 import { generateName } from '../generators/name.js'
 import { generateEvent } from '../generators/event.js'
-import { SKITTLE_COLOURS, type SkittleColour, type SkittleSet } from '../generators/event.js'
+import { SKITTLE_COLOURS, type SkittleSet } from '../generators/event.js'
+import {
+  addSkittles,
+  canAfford,
+  emptySkittles,
+  isValidSet,
+  subSkittles
+} from './skittles.js'
+import {
+  allSigned,
+  expireContracts,
+  fireOnEvent,
+  fireOnSign,
+  type Contract
+} from './contracts.js'
 import type { GameAction, GameState, PlayerState, TradeOffer } from './types.js'
+
+// Re-export the skittle math so existing importers keep working.
+export { addSkittles, canAfford, emptySkittles, subSkittles } from './skittles.js'
 
 /** Minimum players before the host can start (was MIN_PLAYER_COUNT in Rails). */
 export const MIN_PLAYERS = 2
 
 /** Default reveal→resolve window for events, in seconds. */
 export const DEFAULT_EVENT_DURATION = 30
-
-export function emptySkittles(): SkittleSet {
-  return { red: 0, orange: 0, yellow: 0, purple: 0, green: 0 }
-}
-
-function fromColours(fn: (colour: SkittleColour) => number): SkittleSet {
-  const set = emptySkittles()
-  for (const colour of SKITTLE_COLOURS) set[colour] = fn(colour)
-  return set
-}
-
-export function addSkittles(a: SkittleSet, b: SkittleSet): SkittleSet {
-  return fromColours((c) => a[c] + b[c])
-}
-
-/** Subtract, clamping each colour at zero. */
-export function subSkittles(a: SkittleSet, b: SkittleSet): SkittleSet {
-  return fromColours((c) => Math.max(0, a[c] - b[c]))
-}
-
-/** Whether `a` holds at least `b` of every colour. */
-export function canAfford(a: SkittleSet, b: SkittleSet): boolean {
-  return SKITTLE_COLOURS.every((c) => a[c] >= b[c])
-}
-
-function isValidSet(s: SkittleSet | null | undefined): s is SkittleSet {
-  return !!s && SKITTLE_COLOURS.every((c) => Number.isInteger(s[c]) && s[c] >= 0)
-}
 
 /** Deterministic seed for a player's flag and civ name. */
 export function playerSeed(roomCode: string, id: string): string {
@@ -63,7 +52,9 @@ export function createGame(roomCode: string, hostId: string): GameState {
     eventDuration: DEFAULT_EVENT_DURATION,
     hideNonNeighbours: true,
     offers: [],
-    nextOfferId: 0
+    nextOfferId: 0,
+    contracts: [],
+    nextContractId: 0
   }
 }
 
@@ -94,7 +85,8 @@ export function removePlayer(state: GameState, id: string): GameState {
     ...state,
     players,
     order: state.order.filter((p) => p !== id),
-    offers: state.offers.filter((o) => o.from !== id && o.to !== id)
+    offers: state.offers.filter((o) => o.from !== id && o.to !== id),
+    contracts: state.contracts.filter((c) => !c.parties.includes(id))
   }
 }
 
@@ -127,16 +119,17 @@ export function visibleTo(state: GameState, viewerId: string): Set<string> {
  * not just UI hiding).
  */
 export function redactStateFor(state: GameState, viewerId: string): GameState {
-  // Trade offers are only ever relevant to the two parties.
+  // Trades and contracts are only relevant to the parties involved.
   const offers = state.offers.filter((o) => o.from === viewerId || o.to === viewerId)
-  if (!state.hideNonNeighbours) return { ...state, offers }
+  const contracts = state.contracts.filter((c) => c.parties.includes(viewerId))
+  if (!state.hideNonNeighbours) return { ...state, offers, contracts }
 
   const visible = visibleTo(state, viewerId)
   const players: Record<string, PlayerState> = {}
   for (const [id, p] of Object.entries(state.players)) {
     players[id] = visible.has(id) ? p : { ...p, skittles: null }
   }
-  return { ...state, players, offers }
+  return { ...state, players, offers, contracts }
 }
 
 /** Players still in the game (not eliminated). */
@@ -249,7 +242,14 @@ export function applyAction(
       const round = state.round + 1
       // Deterministic per (room, round); scaled by the number of players.
       const event = generateEvent(playerCount(state), `${state.roomCode}:event:${round}`)
-      return { ...state, round, event, eventEndsAt: now + state.eventDuration * 1000 }
+      const revealed: GameState = {
+        ...state,
+        round,
+        event,
+        eventEndsAt: now + state.eventDuration * 1000
+      }
+      // Fire recurring contract clauses against the new event, then expire.
+      return expireContracts(fireOnEvent(revealed, event))
     }
     case 'resolveEvent': {
       if (senderId !== state.hostId) return state
@@ -297,6 +297,60 @@ export function applyAction(
       if (!offer || (offer.from !== senderId && offer.to !== senderId)) return state
       return { ...state, offers: state.offers.filter((o) => o.id !== action.offerId) }
     }
+    case 'proposeContract': {
+      if (state.phase !== 'active') return state
+      const parties = action.parties
+      const unique = new Set(parties)
+      if (!parties.includes(senderId)) return state
+      if (unique.size < 2 || unique.size !== parties.length) return state
+      for (const id of parties) {
+        const p = state.players[id]
+        if (!p || p.out) return state
+      }
+      const transfers = [...action.onSign, ...action.onEvent]
+      if (!transfers.every((t) => unique.has(t.from) && unique.has(t.to))) return state
+      const contract: Contract = {
+        id: `contract-${state.nextContractId}`,
+        parties,
+        signed: [senderId], // proposer signs on creation
+        onSign: action.onSign,
+        onEvent: action.onEvent,
+        expiresRound: action.expiresRound,
+        signFired: false
+      }
+      return {
+        ...state,
+        contracts: [...state.contracts, contract],
+        nextContractId: state.nextContractId + 1
+      }
+    }
+    case 'signContract': {
+      const idx = state.contracts.findIndex((c) => c.id === action.contractId)
+      if (idx === -1) return state
+      const contract = state.contracts[idx]!
+      if (!contract.parties.includes(senderId) || contract.signed.includes(senderId)) return state
+
+      const signedContract: Contract = { ...contract, signed: [...contract.signed, senderId] }
+      const withSign = {
+        ...state,
+        contracts: state.contracts.map((c, i) => (i === idx ? signedContract : c))
+      }
+      if (!allSigned(signedContract) || signedContract.signFired) return withSign
+
+      // Everyone has signed: fire the one-shot clause, then mark it fired and
+      // drop the contract if it has no recurring (onEvent) clause.
+      const fired = fireOnSign(withSign, signedContract)
+      const finalContract: Contract = { ...signedContract, signFired: true }
+      const contracts = fired.contracts
+        .map((c) => (c.id === finalContract.id ? finalContract : c))
+        .filter((c) => c.id !== finalContract.id || finalContract.onEvent.length > 0)
+      return { ...fired, contracts }
+    }
+    case 'cancelContract': {
+      const contract = state.contracts.find((c) => c.id === action.contractId)
+      if (!contract || !contract.parties.includes(senderId)) return state
+      return { ...state, contracts: state.contracts.filter((c) => c.id !== action.contractId) }
+    }
     case 'reset': {
       if (senderId !== state.hostId) return state
       const players: Record<string, PlayerState> = {}
@@ -309,7 +363,8 @@ export function applyAction(
         players,
         event: null,
         eventEndsAt: null,
-        offers: []
+        offers: [],
+        contracts: []
       }
     }
     default:
