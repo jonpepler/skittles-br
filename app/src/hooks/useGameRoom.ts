@@ -11,6 +11,7 @@ import {
   removePlayer
 } from '../game/state.js'
 import type { GameAction, GameState, Role } from '../game/types.js'
+import type { Transfer } from '../game/contracts.js'
 import type { SkittleColour, SkittleSet } from '../generators/event.js'
 
 export interface GameRoomApi {
@@ -29,6 +30,14 @@ export interface GameRoomApi {
   proposeTrade: (to: string, give: SkittleSet, receive: SkittleSet) => void
   acceptTrade: (offerId: string) => void
   cancelTrade: (offerId: string) => void
+  proposeContract: (
+    parties: string[],
+    onSign: Transfer[],
+    onEvent: Transfer[],
+    expiresRound: number | null
+  ) => void
+  signContract: (contractId: string) => void
+  cancelContract: (contractId: string) => void
 }
 
 /**
@@ -190,6 +199,9 @@ export function useGameRoom(roomCode: string, role: Role): GameRoomApi {
     setVisibility: useCallback((hideNonNeighbours: boolean) => dispatch({ type: 'setVisibility', hideNonNeighbours }), [dispatch]),
     proposeTrade: useCallback((to: string, give: SkittleSet, receive: SkittleSet) => dispatch({ type: 'proposeTrade', to, give, receive }), [dispatch]),
     acceptTrade: useCallback((offerId: string) => dispatch({ type: 'acceptTrade', offerId }), [dispatch]),
-    cancelTrade: useCallback((offerId: string) => dispatch({ type: 'cancelTrade', offerId }), [dispatch])
+    cancelTrade: useCallback((offerId: string) => dispatch({ type: 'cancelTrade', offerId }), [dispatch]),
+    proposeContract: useCallback((parties: string[], onSign: Transfer[], onEvent: Transfer[], expiresRound: number | null) => dispatch({ type: 'proposeContract', parties, onSign, onEvent, expiresRound }), [dispatch]),
+    signContract: useCallback((contractId: string) => dispatch({ type: 'signContract', contractId }), [dispatch]),
+    cancelContract: useCallback((contractId: string) => dispatch({ type: 'cancelContract', contractId }), [dispatch])
   }
 }

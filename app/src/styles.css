@@ -313,6 +313,41 @@ body {
   flex-shrink: 0;
 }
 
+/* Contracts */
+.contracts {
+  margin-top: 1.5rem;
+  border-top: 1px solid #2a2d4d;
+  padding-top: 1rem;
+}
+.contracts__form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.contracts__form select {
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #353861;
+  background: var(--panel);
+  color: var(--text);
+}
+.contracts__item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #2a2d4d;
+}
+.contracts__clauses {
+  margin: 0.3rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
 /* Player list */
 .player-list {
   display: grid;

@@ -6,6 +6,7 @@ import { SkittlePanel } from './SkittlePanel.js'
 import { EventPanel } from './EventPanel.js'
 import { ShareInvite } from './ShareInvite.js'
 import { TradePanel } from './TradePanel.js'
+import { ContractsPanel } from './ContractsPanel.js'
 
 export function GameScreen({
   roomCode,
@@ -104,14 +105,24 @@ export function GameScreen({
           )}
 
           {!self.out && (
-            <TradePanel
-              players={players}
-              selfId={selfId!}
-              offers={state.offers}
-              onPropose={game.proposeTrade}
-              onAccept={game.acceptTrade}
-              onCancel={game.cancelTrade}
-            />
+            <>
+              <TradePanel
+                players={players}
+                selfId={selfId!}
+                offers={state.offers}
+                onPropose={game.proposeTrade}
+                onAccept={game.acceptTrade}
+                onCancel={game.cancelTrade}
+              />
+              <ContractsPanel
+                players={players}
+                selfId={selfId!}
+                contracts={state.contracts}
+                onPropose={game.proposeContract}
+                onSign={game.signContract}
+                onCancel={game.cancelContract}
+              />
+            </>
           )}
         </section>
       )}
