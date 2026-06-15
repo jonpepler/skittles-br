@@ -166,6 +166,14 @@ export function useGameRoom(roomCode: string, role: Role): GameRoomApi {
     }
   }, [])
 
+  // Host only: when an event's window elapses, it "happens" (resolves).
+  useEffect(() => {
+    if (!isHost || !state?.event || state.eventEndsAt == null) return
+    const ms = Math.max(0, state.eventEndsAt - Date.now())
+    const timer = setTimeout(() => dispatch({ type: 'resolveEvent' }), ms)
+    return () => clearTimeout(timer)
+  }, [isHost, state?.event, state?.eventEndsAt, dispatch])
+
   return {
     state,
     selfId: selfIdRef.current,

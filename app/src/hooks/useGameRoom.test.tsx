@@ -110,6 +110,35 @@ describe('App end-to-end (fake transport)', () => {
   })
 })
 
+describe('event timer', () => {
+  beforeEach(() => {
+    h.room.sentStates = []
+    h.room.handlers = {}
+  })
+
+  it('host auto-resolves the event after its window elapses', async () => {
+    vi.useFakeTimers()
+    try {
+      const { result } = renderHook(() => useGameRoom('CODE', 'host'))
+      const join = (id: string) =>
+        (h.room.handlers.onPeerJoin as (p: string) => void)(id)
+
+      act(() => join('GUEST')) // need two players to start
+      act(() => result.current.start())
+      act(() => result.current.triggerEvent())
+      expect(result.current.state?.event).not.toBeNull()
+
+      const window = result.current.state!.eventDuration * 1000
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(window + 100)
+      })
+      expect(result.current.state?.event).toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
 describe('host migration', () => {
   beforeEach(() => {
     h.room.sentStates = []

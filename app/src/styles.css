@@ -182,7 +182,26 @@ body {
   height: 100%;
 }
 
+.game__setting {
+  display: block;
+  margin: 0 0 1rem;
+  opacity: 0.85;
+}
+.game__duration {
+  width: 5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #353861;
+  background: var(--panel);
+  color: var(--text);
+}
+
 /* Event */
+.event__timer {
+  font-weight: 600;
+  color: var(--yellow);
+  margin-bottom: 0.75rem;
+}
 .event {
   background: var(--panel);
   border: 1px solid #2a2d4d;

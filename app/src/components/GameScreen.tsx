@@ -41,11 +41,28 @@ export function GameScreen({
         <section>
           <ShareInvite code={roomCode} />
           {game.isHost ? (
-            <button className="btn btn--large" disabled={!game.canStart} onClick={game.start}>
-              {game.canStart
-                ? 'Start game'
-                : `Waiting for players (${players.length}/${MIN_PLAYERS})`}
-            </button>
+            <>
+              <label className="game__setting">
+                Event window (seconds):{' '}
+                <input
+                  className="game__duration"
+                  type="number"
+                  min={5}
+                  max={300}
+                  value={state.eventDuration}
+                  onChange={(e) => game.setEventDuration(Number(e.target.value))}
+                />
+              </label>
+              <button
+                className="btn btn--large"
+                disabled={!game.canStart}
+                onClick={game.start}
+              >
+                {game.canStart
+                  ? 'Start game'
+                  : `Waiting for players (${players.length}/${MIN_PLAYERS})`}
+              </button>
+            </>
           ) : (
             <p className="game__hint">Waiting for the host to start…</p>
           )}
@@ -58,7 +75,7 @@ export function GameScreen({
           <SkittlePanel skittles={self.skittles} onIncrement={game.incrementSkittle} />
 
           {state.event ? (
-            <EventPanel event={state.event} round={state.round} />
+            <EventPanel event={state.event} round={state.round} endsAt={state.eventEndsAt} />
           ) : (
             <p className="game__hint">No event yet.</p>
           )}

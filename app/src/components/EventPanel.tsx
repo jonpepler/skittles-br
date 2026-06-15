@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { SKITTLE_COLOURS, type GameEvent, type SkittleSet } from '../generators/event.js'
 
 function SkittleCosts({ set }: { set: SkittleSet }) {
@@ -14,14 +15,44 @@ function SkittleCosts({ set }: { set: SkittleSet }) {
   )
 }
 
-/** Displays the event currently in play. Resolution rules (how requirement,
- *  reward and penalty are applied) are intentionally left to the game design. */
-export function EventPanel({ event, round }: { event: GameEvent; round: number }) {
+/** Live countdown to when the event resolves ("happens"). */
+function Countdown({ endsAt }: { endsAt: number }) {
+  const [remaining, setRemaining] = useState(() => Math.max(0, endsAt - Date.now()))
+  useEffect(() => {
+    const tick = (): void => setRemaining(Math.max(0, endsAt - Date.now()))
+    tick()
+    const id = setInterval(tick, 250)
+    return () => clearInterval(id)
+  }, [endsAt])
+
+  const seconds = Math.ceil(remaining / 1000)
+  return (
+    <div className="event__timer">
+      {remaining > 0 ? `Happens in ${seconds}s — trade now!` : 'Resolving…'}
+    </div>
+  )
+}
+
+/**
+ * Displays the event currently in play. When it resolves, each player who can
+ * afford the requirement spends it for the reward; everyone else takes the
+ * penalty (see resolveEvent).
+ */
+export function EventPanel({
+  event,
+  round,
+  endsAt
+}: {
+  event: GameEvent
+  round: number
+  endsAt: number | null
+}) {
   return (
     <div className="event">
       <div className="event__round">Event {round}</div>
       <h3 className="event__name">{event.name}</h3>
       <p className="event__description">{event.description}</p>
+      {endsAt != null && <Countdown endsAt={endsAt} />}
       <dl className="event__grid">
         <dt>Requires</dt>
         <dd>
