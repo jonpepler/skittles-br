@@ -83,5 +83,13 @@ export type GameAction =
       expiresRound: number | null
     }
   | { type: 'signContract'; contractId: string }
+  | {
+      type: 'reviseContract'
+      contractId: string
+      onSign: Transfer[]
+      onEvent: Transfer[]
+      onReceive: Transfer[]
+      expiresRound: number | null
+    }
   | { type: 'cancelContract'; contractId: string }
   | { type: 'reset' }

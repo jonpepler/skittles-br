@@ -229,6 +229,84 @@ describe('contracts — onReceive (percentage cut)', () => {
   })
 })
 
+describe('contracts — negotiation (revise / counter-offer)', () => {
+  function proposed(): GameState {
+    let game = activeWith('a', 'b')
+    game = give(game, 'a', set({ red: 5 }))
+    game = give(game, 'b', set({ green: 5 }))
+    return applyAction(game, 'a', {
+      type: 'proposeContract',
+      parties: ['a', 'b'],
+      onSign: [{ from: 'a', to: 'b', give: { red: 1 } }],
+      onEvent: [],
+      onReceive: [],
+      expiresRound: null
+    })
+  }
+
+  it('a counter-offer rewrites the clauses and resets agreement', () => {
+    const game = proposed()
+    const id = game.contracts[0]!.id
+    // b counters: instead, b wants a swap (a gives 2 red, b gives 1 green).
+    const countered = applyAction(game, 'b', {
+      type: 'reviseContract',
+      contractId: id,
+      onSign: [
+        { from: 'a', to: 'b', give: { red: 2 } },
+        { from: 'b', to: 'a', give: { green: 1 } }
+      ],
+      onEvent: [],
+      onReceive: [],
+      expiresRound: null
+    })
+    const c = countered.contracts[0]!
+    expect(c.signed).toEqual(['b']) // only the reviser; a must re-agree
+    expect(c.onSign).toHaveLength(2)
+  })
+
+  it('fires the latest version once everyone re-signs', () => {
+    let game = proposed()
+    const id = game.contracts[0]!.id
+    game = applyAction(game, 'b', {
+      type: 'reviseContract',
+      contractId: id,
+      onSign: [
+        { from: 'a', to: 'b', give: { red: 2 } },
+        { from: 'b', to: 'a', give: { green: 1 } }
+      ],
+      onEvent: [],
+      onReceive: [],
+      expiresRound: null
+    })
+    // a agrees to b's counter.
+    game = applyAction(game, 'a', { type: 'signContract', contractId: id })
+    expect(game.players['a']!.skittles).toEqual(set({ red: 3, green: 1 }))
+    expect(game.players['b']!.skittles).toEqual(set({ red: 2, green: 4 }))
+  })
+
+  it('rejects revision by a non-party', () => {
+    const game = activeWith('a', 'b', 'c')
+    const withContract = applyAction(give(game, 'a', set({ red: 2 })), 'a', {
+      type: 'proposeContract',
+      parties: ['a', 'b'],
+      onSign: [{ from: 'a', to: 'b', give: { red: 1 } }],
+      onEvent: [],
+      onReceive: [],
+      expiresRound: null
+    })
+    const id = withContract.contracts[0]!.id
+    const after = applyAction(withContract, 'c', {
+      type: 'reviseContract',
+      contractId: id,
+      onSign: [],
+      onEvent: [],
+      onReceive: [],
+      expiresRound: null
+    })
+    expect(after).toBe(withContract)
+  })
+})
+
 describe('contracts — authority', () => {
   it('only a party can sign or cancel', () => {
     let game = activeWith('a', 'b', 'c')

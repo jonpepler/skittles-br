@@ -355,6 +355,26 @@ export function applyAction(
       // React to skittles moved by the onSign clause.
       return fireReceives(result, diffGains(state, result))
     }
+    case 'reviseContract': {
+      // Counter-offer: a party rewrites a not-yet-active contract's clauses,
+      // which resets agreement so everyone must sign the new version.
+      const idx = state.contracts.findIndex((c) => c.id === action.contractId)
+      if (idx === -1) return state
+      const c = state.contracts[idx]!
+      if (!c.parties.includes(senderId) || c.signFired) return state
+      const unique = new Set(c.parties)
+      const transfers = [...action.onSign, ...action.onEvent, ...action.onReceive]
+      if (!transfers.every((t) => unique.has(t.from) && unique.has(t.to))) return state
+      const revised: Contract = {
+        ...c,
+        onSign: action.onSign,
+        onEvent: action.onEvent,
+        onReceive: action.onReceive,
+        expiresRound: action.expiresRound,
+        signed: [senderId]
+      }
+      return { ...state, contracts: state.contracts.map((x, i) => (i === idx ? revised : x)) }
+    }
     case 'cancelContract': {
       const contract = state.contracts.find((c) => c.id === action.contractId)
       if (!contract || !contract.parties.includes(senderId)) return state
