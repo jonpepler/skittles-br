@@ -30,6 +30,16 @@ const h = vi.hoisted(() => {
   room.setOnAction = (cb: never) => (room.handlers.onAction = cb)
   room.sendHello = () => {}
   room.setOnHello = (cb: never) => (room.handlers.onHello = cb)
+  // Threshold-failover channels. crypto.subtle is absent under jsdom, so the
+  // hook never exercises encryption here; these just need to exist.
+  room.sendBackup = () => {}
+  room.setOnBackup = (cb: never) => (room.handlers.onBackup = cb)
+  room.sendShare = () => {}
+  room.setOnShare = (cb: never) => (room.handlers.onShare = cb)
+  room.sendShareRequest = () => {}
+  room.setOnShareRequest = (cb: never) => (room.handlers.onShareRequest = cb)
+  room.sendShareResponse = () => {}
+  room.setOnShareResponse = (cb: never) => (room.handlers.onShareResponse = cb)
   room.setOnPeerJoin = (cb: never) => (room.handlers.onPeerJoin = cb)
   room.setOnPeerLeave = (cb: never) => (room.handlers.onPeerLeave = cb)
   room.leave = () => {}

@@ -19,6 +19,16 @@ const APP_ID = 'skittles-br'
 export type PeerId = string
 export type Target = PeerId | PeerId[]
 
+/**
+ * The public part of a threshold backup: ciphertext every guest may hold. The
+ * index signature keeps it assignable to Trystero's JSON DataPayload.
+ */
+export interface BackupBlob {
+  iv: string
+  ciphertext: string
+  [key: string]: string
+}
+
 export interface GameRoom {
   selfId: PeerId
   sendState: (state: GameState, target?: Target) => void
@@ -28,6 +38,18 @@ export interface GameRoom {
   setOnSnapshot: (cb: (state: GameState, peerId: PeerId) => void) => void
   sendAction: (action: GameAction, target?: Target) => void
   setOnAction: (cb: (action: GameAction, peerId: PeerId) => void) => void
+  /** Threshold failover: the public ciphertext, broadcast to all guests. */
+  sendBackup: (blob: BackupBlob, target?: Target) => void
+  setOnBackup: (cb: (blob: BackupBlob, peerId: PeerId) => void) => void
+  /** Threshold failover: a guest's own encoded key share, sent privately. */
+  sendShare: (share: string, target?: Target) => void
+  setOnShare: (cb: (share: string, peerId: PeerId) => void) => void
+  /** Promotion: the new host asks the other guests for their key shares. */
+  sendShareRequest: (target?: Target) => void
+  setOnShareRequest: (cb: (peerId: PeerId) => void) => void
+  /** Promotion: a guest replies with its stored key share. */
+  sendShareResponse: (share: string, target?: Target) => void
+  setOnShareResponse: (cb: (share: string, peerId: PeerId) => void) => void
   /** Late-joiner handshake: a guest pings the host to request current state. */
   sendHello: (target?: Target) => void
   setOnHello: (cb: (peerId: PeerId) => void) => void
@@ -42,6 +64,10 @@ export function joinGameRoom(roomCode: string): GameRoom {
   const snapshot = room.makeAction<GameState>('snapshot')
   const action = room.makeAction<GameAction>('action')
   const hello = room.makeAction<number>('hello')
+  const backup = room.makeAction<BackupBlob>('backup')
+  const share = room.makeAction<string>('share')
+  const shareReq = room.makeAction<number>('shareReq')
+  const shareResp = room.makeAction<string>('shareResp')
 
   return {
     selfId,
@@ -60,6 +86,22 @@ export function joinGameRoom(roomCode: string): GameRoom {
     sendHello: (target) => void hello.send(1, target ? { target } : undefined),
     setOnHello: (cb) => {
       hello.onMessage = (_data, ctx) => cb(ctx.peerId)
+    },
+    sendBackup: (b, target) => void backup.send(b, target ? { target } : undefined),
+    setOnBackup: (cb) => {
+      backup.onMessage = (data, ctx) => cb(data, ctx.peerId)
+    },
+    sendShare: (s, target) => void share.send(s, target ? { target } : undefined),
+    setOnShare: (cb) => {
+      share.onMessage = (data, ctx) => cb(data, ctx.peerId)
+    },
+    sendShareRequest: (target) => void shareReq.send(1, target ? { target } : undefined),
+    setOnShareRequest: (cb) => {
+      shareReq.onMessage = (_data, ctx) => cb(ctx.peerId)
+    },
+    sendShareResponse: (s, target) => void shareResp.send(s, target ? { target } : undefined),
+    setOnShareResponse: (cb) => {
+      shareResp.onMessage = (data, ctx) => cb(data, ctx.peerId)
     },
     setOnPeerJoin: (cb) => {
       room.onPeerJoin = cb
