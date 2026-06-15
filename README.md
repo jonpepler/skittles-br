@@ -54,6 +54,16 @@ anyone (propose/accept/cancel). On resolution each player who can afford the
 requirement spends it for the reward; anyone who can't pay the gate is
 **eliminated**, and the last player standing wins.
 
+Trading is generalised into a declarative **contracts** system (smart-contracts
+for skittles, as data not code). A contract bundles transfers whose amounts are
+expressions — a literal, `all of my <colour>`, `the event's required <colour>`,
+a `%` of another amount, or `what I just received` — under clauses that fire
+once on signing, every event, or whenever a party receives skittles. So gifts,
+swaps, n-way circular trades, recurring "cover my event reds", and "every time I
+get red, you get 50%" are all the same primitive. Players author them with a
+guided sentence-builder. Reconstruction-on-failover uses Shamir
+threshold-encrypted state backups so no single peer can read hidden skittles.
+
 The only thing that can't be fully static is **WebRTC signalling** — peers need
 a broker to find each other before connecting directly. That's handled by
 [Trystero](https://github.com/dmotz/trystero) over public Nostr relays, so

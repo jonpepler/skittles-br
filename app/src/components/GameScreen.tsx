@@ -118,6 +118,7 @@ export function GameScreen({
                 players={players}
                 selfId={selfId!}
                 contracts={state.contracts}
+                round={state.round}
                 onPropose={game.proposeContract}
                 onSign={game.signContract}
                 onCancel={game.cancelContract}
