@@ -39,6 +39,10 @@ test('host can create a game and see their nation in the lobby', async ({ page }
 test('two peers connect, start, and share skittle state (needs relay egress)', async ({
   browser
 }) => {
+  // Depends on reaching public Nostr relays, so it's off by default (CI and
+  // sandboxes can't rely on that egress). The local-transport multipeer spec
+  // covers multi-peer behaviour deterministically. Set RUN_RELAY_E2E to run it.
+  test.skip(!process.env.RUN_RELAY_E2E, 'set RUN_RELAY_E2E to exercise the live relay path')
   const ctxA = await browser.newContext()
   const ctxB = await browser.newContext()
   const a = await ctxA.newPage()
