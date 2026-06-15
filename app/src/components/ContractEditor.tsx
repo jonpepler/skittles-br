@@ -3,13 +3,10 @@ import type { PlayerState } from '../game/types.js'
 import type { Transfer } from '../game/contracts.js'
 import { AmountChip } from './AmountChip.js'
 import { ColourPicker } from './ColourPicker.js'
-import {
-  type ClauseDraft,
-  type Trigger,
-  clausesToBuckets,
-  describeClause,
-  newClause
-} from './contractDraft.js'
+import { FactionSelect } from './FactionSelect.js'
+import { FactionTitle } from './FactionTitle.js'
+import { ContractSummary } from './ContractSummary.js'
+import { type ClauseDraft, type Trigger, clausesToBuckets, newClause } from './contractDraft.js'
 
 export interface EditorSubmit {
   (
@@ -76,23 +73,7 @@ export function ContractEditor({
     onSubmit(parties, onSign, onEvent, onReceive, expiresIn > 0 ? round + expiresIn : null)
   }
 
-  const PartySelect = ({
-    label,
-    value,
-    onChange
-  }: {
-    label: string
-    value: string
-    onChange: (v: string) => void
-  }) => (
-    <select className="chip" aria-label={label} value={value} onChange={(e) => onChange(e.target.value)}>
-      {partyOptions.map((p) => (
-        <option key={p.id} value={p.id}>
-          {p.name}
-        </option>
-      ))}
-    </select>
-  )
+  const playerMap = Object.fromEntries(players.map((p) => [p.id, { name: p.name }]))
 
   return (
     <div className="editor">
@@ -100,8 +81,7 @@ export function ContractEditor({
         <span className="amt__kw">Parties:</span>
         {parties.map((id) => (
           <span key={id} className="editor__party">
-            {nameOf(id)}
-            {id === selfId && ' (you)'}
+            <FactionTitle id={id} name={nameOf(id)} self={id === selfId} size="sm" />
             {id !== selfId && (
               <button
                 className="chip chip--x"
@@ -149,9 +129,19 @@ export function ContractEditor({
                 onChange={(col) => patch(c.key, { receiveColour: col })}
               />
             )}
-            <PartySelect label="Giver" value={c.from} onChange={(v) => patch(c.key, { from: v })} />
+            <FactionSelect
+              label="Giver"
+              value={c.from}
+              options={partyOptions}
+              onChange={(v) => patch(c.key, { from: v })}
+            />
             <span className="amt__kw">gives</span>
-            <PartySelect label="Recipient" value={c.to} onChange={(v) => patch(c.key, { to: v })} />
+            <FactionSelect
+              label="Recipient"
+              value={c.to}
+              options={partyOptions}
+              onChange={(v) => patch(c.key, { to: v })}
+            />
             <AmountChip
               value={c.amount}
               defaultColour={c.colour}
@@ -163,9 +153,14 @@ export function ContractEditor({
               onChange={(col) => patch(c.key, { colour: col })}
             />
           </div>
-          <p className="clause__preview">{describeClause(c, nameOf)}</p>
         </div>
       ))}
+
+      <ContractSummary
+        buckets={clausesToBuckets(clauses)}
+        players={playerMap}
+        viewerId={selfId}
+      />
 
       <div className="contracts__actions">
         <button

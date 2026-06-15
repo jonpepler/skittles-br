@@ -2,7 +2,9 @@ import { useState } from 'react'
 import type { Contract, Transfer } from '../game/contracts.js'
 import type { PlayerState } from '../game/types.js'
 import { ContractEditor } from './ContractEditor.js'
-import { contractToClauses, describeClause } from './contractDraft.js'
+import { contractToClauses } from './contractDraft.js'
+import { ContractSummary } from './ContractSummary.js'
+import { FactionTitle } from './FactionTitle.js'
 
 export function ContractsPanel({
   players,
@@ -40,7 +42,7 @@ export function ContractsPanel({
   const [draftKey, setDraftKey] = useState(0)
   const [countering, setCountering] = useState<string | null>(null)
 
-  const nameOf = (id: string): string => players.find((p) => p.id === id)?.name ?? id
+  const playerMap = Object.fromEntries(players.map((p) => [p.id, { name: p.name }]))
 
   return (
     <section className="contracts">
@@ -66,22 +68,29 @@ export function ContractsPanel({
         <div className="contracts__list">
           {contracts.map((c) => {
             const mine = c.signed.includes(selfId)
-            const clauses = contractToClauses(c)
             return (
               <div key={c.id} className="contracts__item">
                 <div className="contracts__item-body">
-                  <div>
-                    <strong>{c.parties.map(nameOf).join(' · ')}</strong>{' '}
+                  <div className="contracts__item-parties">
+                    {c.parties.map((id) => (
+                      <FactionTitle
+                        key={id}
+                        id={id}
+                        name={playerMap[id]?.name ?? id}
+                        self={id === selfId}
+                        size="sm"
+                      />
+                    ))}
                     <span className="game__hint">
-                      ({c.signed.length}/{c.parties.length} signed
-                      {mine ? ', incl. you' : ''})
+                      {c.signed.length}/{c.parties.length} signed
+                      {mine ? ', incl. you' : ''}
                     </span>
                   </div>
-                  <ul className="contracts__clauses">
-                    {clauses.map((cl) => (
-                      <li key={cl.key}>{describeClause(cl, nameOf)}</li>
-                    ))}
-                  </ul>
+                  <ContractSummary
+                    buckets={{ onSign: c.onSign, onEvent: c.onEvent, onReceive: c.onReceive }}
+                    players={playerMap}
+                    viewerId={selfId}
+                  />
 
                   {countering === c.id ? (
                     <ContractEditor

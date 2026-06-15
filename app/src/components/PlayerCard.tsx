@@ -1,4 +1,5 @@
 import { FlagImage } from './FlagImage.js'
+import { FactionTitle } from './FactionTitle.js'
 import { SKITTLE_COLOURS } from '../generators/event.js'
 import type { PlayerState } from '../game/types.js'
 
@@ -16,8 +17,7 @@ export function PlayerCard({
       <FlagImage seed={player.flagSeed} className="player-card__flag" />
       <div className="player-card__body">
         <div className="player-card__name">
-          {player.name}
-          {isSelf && <span className="player-card__you"> (you)</span>}
+          <FactionTitle id={player.id} name={player.name} self={isSelf} />
           {player.out && <span className="player-card__out-badge"> OUT</span>}
         </div>
         {player.skittles ? (

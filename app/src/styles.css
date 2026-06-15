@@ -1,13 +1,25 @@
 :root {
-  --red: #ce1126;
-  --orange: #ff8430;
-  --yellow: #fcd116;
-  --purple: #6b3fa0;
-  --green: #108042;
-  --bg: #0f1020;
-  --panel: #1b1d33;
-  --text: #f3f3fb;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  /* Candy skittle palette (UI accents; flag art keeps its own colours). */
+  --red: #ff4d6d;
+  --orange: #ff922b;
+  --yellow: #ffd43b;
+  --purple: #b07cff;
+  --green: #37d9a0;
+
+  --bg: #12081f;
+  --panel: #241544;
+  --panel-2: #2e1a55;
+  --line: #3d2a6e;
+  --text: #f6f0ff;
+  --muted: #b9a9e0;
+  --accent: #ff5da2;
+  --accent-2: #7c5cff;
+
+  --chip-h: 2.2rem;
+  --radius: 16px;
+
+  font-family: ui-rounded, 'Segoe UI Rounded', system-ui, -apple-system, Segoe UI, Roboto,
+    sans-serif;
 }
 
 * {
@@ -16,35 +28,53 @@
 
 body {
   margin: 0;
-  background: var(--bg);
+  background: radial-gradient(120% 90% at 50% -10%, #2a1450 0%, var(--bg) 60%) fixed;
   color: var(--text);
 }
 
 #root {
-  max-width: 900px;
+  max-width: 960px;
   margin: 0 auto;
   padding: 1.5rem;
 }
 
+h1,
+h2,
+h3 {
+  letter-spacing: -0.01em;
+}
+
 .btn {
-  background: var(--panel);
+  background: var(--panel-2);
   color: var(--text);
-  border: 1px solid #353861;
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.5rem 1.1rem;
+  min-height: var(--chip-h);
   font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.12s, border-color 0.12s, filter 0.12s;
 }
 .btn:hover:not(:disabled) {
-  border-color: #5a5fa3;
+  border-color: var(--accent-2);
+  transform: translateY(-1px);
 }
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 .btn--large {
-  font-size: 1.25rem;
-  padding: 0.75rem 1.5rem;
+  font-size: 1.15rem;
+  padding: 0.7rem 1.6rem;
+  border: none;
+  color: #1a0c2e;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--yellow), var(--orange));
+  box-shadow: 0 6px 18px rgba(255, 146, 43, 0.3);
+}
+.btn--large:hover:not(:disabled) {
+  filter: brightness(1.05);
 }
 
 /* Landing */
@@ -53,8 +83,14 @@ body {
   padding-top: 4rem;
 }
 .landing__title {
-  font-size: 3rem;
+  font-size: 3.6rem;
   margin: 0;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, var(--accent), var(--yellow) 55%, var(--green));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 .landing__tagline {
   opacity: 0.7;
@@ -633,4 +669,181 @@ select.chip {
   align-items: center;
   gap: 0.3rem;
   font-size: 0.9rem;
+}
+
+/* ── Playful theme cohesion ─────────────────────────────────────── */
+.editor {
+  background: linear-gradient(180deg, #281858, #1d1142);
+  border-color: var(--line);
+  border-radius: var(--radius);
+}
+.clause-card {
+  background: #20143f;
+  border-color: var(--line);
+}
+.contracts__item {
+  background: #1d1140;
+  border-color: var(--line);
+  border-radius: var(--radius);
+}
+.editor__party {
+  background: transparent;
+  border: none;
+  padding: 0;
+  gap: 0.25rem;
+}
+
+/* Consistent chip sizing — every chip shares one height */
+.chip {
+  height: var(--chip-h);
+  background: var(--panel-2);
+  border-color: var(--line);
+  border-radius: 10px;
+}
+button.chip,
+.fselect {
+  display: inline-flex;
+  align-items: center;
+}
+.chip:hover {
+  border-color: var(--accent-2);
+}
+.chip--when {
+  background: #35206e;
+}
+.cpick {
+  min-height: var(--chip-h);
+}
+
+/* Faction chips — the one way a faction is shown */
+.faction {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  line-height: 1.5;
+  font-weight: 700;
+  vertical-align: middle;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--fc) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fc) 50%, transparent);
+}
+.faction--sm {
+  font-size: 0.82rem;
+  padding: 0.05rem 0.45rem;
+}
+.faction__dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: var(--fc);
+  flex: none;
+  box-shadow: 0 0 6px color-mix(in srgb, var(--fc) 70%, transparent);
+}
+.faction__name {
+  color: color-mix(in srgb, var(--fc) 60%, white);
+}
+.faction__you {
+  font-size: 0.7em;
+  font-weight: 700;
+  opacity: 0.85;
+  background: rgba(255, 255, 255, 0.14);
+  padding: 0 0.35rem;
+  border-radius: 999px;
+}
+
+/* Faction select (colour-coded chip wrapping a native select) */
+.fselect {
+  gap: 0.4rem;
+  padding-left: 0.55rem;
+}
+.fselect select {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0 1.2rem 0 0;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6' fill='none' stroke='%239aa0d8' stroke-width='1.4'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right center;
+  background-size: 0.6rem;
+}
+.fselect select:focus {
+  outline: none;
+}
+
+/* Merged contract summary */
+.summary {
+  margin-top: 0.85rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, rgba(255, 93, 162, 0.12), rgba(124, 92, 255, 0.12));
+  border: 1px solid var(--line);
+}
+.summary__line {
+  margin: 0.3rem 0;
+  line-height: 2;
+}
+.summary__when {
+  font-weight: 800;
+  color: var(--accent);
+}
+.summary--empty {
+  opacity: 0.65;
+  font-style: italic;
+  margin: 0;
+}
+.dot {
+  display: inline-block;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+.dot.skittle--red {
+  background: var(--red);
+}
+.dot.skittle--orange {
+  background: var(--orange);
+}
+.dot.skittle--yellow {
+  background: var(--yellow);
+}
+.dot.skittle--purple {
+  background: var(--purple);
+}
+.dot.skittle--green {
+  background: var(--green);
+}
+.contracts__item-parties {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.3rem;
+}
+
+/* Faction chip truncation in tight spaces (e.g. player cards) */
+.faction {
+  min-width: 0;
+  max-width: 100%;
+}
+.faction__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.player-card__name {
+  overflow: hidden;
+}
+/* Calmer disabled primary button */
+.btn--large:disabled {
+  background: var(--panel-2);
+  color: var(--muted);
+  box-shadow: none;
 }

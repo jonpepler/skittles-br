@@ -25,7 +25,7 @@ test('host can create a game and see their nation in the lobby', async ({ page }
 
   // Host's own state renders locally without any peers.
   await expect(page.getByText(/Waiting for players \(1\/2\)/)).toBeVisible()
-  await expect(page.getByText('(you)')).toBeVisible()
+  await expect(page.getByText('you', { exact: true })).toBeVisible()
   // The procedurally generated flag actually rendered as inline SVG.
   await expect(page.locator('.player-card__flag svg')).toBeVisible()
 

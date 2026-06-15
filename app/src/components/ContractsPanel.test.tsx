@@ -77,7 +77,11 @@ describe('ContractsPanel command editor', () => {
     }
     renderPanel({ contracts: [contract], onSign })
     expect(screen.getByText(/1\/2 signed/)).toBeInTheDocument()
-    expect(screen.getByText(/Theirs gives Mine 2 red/)).toBeInTheDocument()
+    // The merged summary renders faction chips + colour dots, so check the
+    // summary region's text rather than one contiguous string.
+    const summary = document.querySelector('.contracts__item .summary')
+    expect(summary?.textContent).toMatch(/On signing/)
+    expect(summary?.textContent).toMatch(/2/)
     await userEvent.click(screen.getByRole('button', { name: 'Sign' }))
     expect(onSign).toHaveBeenCalledWith('contract-0')
   })

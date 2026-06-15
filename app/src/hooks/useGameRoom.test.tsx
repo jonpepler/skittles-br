@@ -68,7 +68,7 @@ describe('App end-to-end (fake transport)', () => {
 
     // Lobby with just the host, below the player minimum.
     expect(screen.getByText(/Waiting for players \(1\/2\)/)).toBeInTheDocument()
-    expect(screen.getByText('(you)')).toBeInTheDocument()
+    expect(screen.getByText('you')).toBeInTheDocument()
 
     // A guest connects — the host should admit them and be able to start.
     act(() => h.room.handlers.onPeerJoin!('GUEST' as never))

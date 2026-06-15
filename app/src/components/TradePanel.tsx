@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { SKITTLE_COLOURS, type SkittleSet } from '../generators/event.js'
 import { emptySkittles } from '../game/state.js'
 import type { PlayerState, TradeOffer } from '../game/types.js'
+import { FactionTitle } from './FactionTitle.js'
 
 function CostList({ set }: { set: SkittleSet }) {
   const entries = SKITTLE_COLOURS.filter((c) => set[c] > 0)
@@ -113,8 +114,8 @@ export function TradePanel({
           {incoming.map((o) => (
             <div key={o.id} className="trade__offer">
               <span>
-                <strong>{nameOf(o.from)}</strong>: you receive <CostList set={o.give} />, you give{' '}
-                <CostList set={o.receive} />
+                <FactionTitle id={o.from} name={nameOf(o.from)} size="sm" />: you receive{' '}
+                <CostList set={o.give} />, you give <CostList set={o.receive} />
               </span>
               <span className="trade__offer-actions">
                 <button className="btn" onClick={() => onAccept(o.id)}>
@@ -135,8 +136,8 @@ export function TradePanel({
           {outgoing.map((o) => (
             <div key={o.id} className="trade__offer">
               <span>
-                To <strong>{nameOf(o.to)}</strong>: you give <CostList set={o.give} />, you receive{' '}
-                <CostList set={o.receive} />
+                To <FactionTitle id={o.to} name={nameOf(o.to)} size="sm" />: you give{' '}
+                <CostList set={o.give} />, you receive <CostList set={o.receive} />
               </span>
               <button className="btn" onClick={() => onCancel(o.id)}>
                 Cancel
