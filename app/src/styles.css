@@ -729,44 +729,26 @@ input.chip {
   padding: 0 0.6rem;
   font-weight: 800;
 }
-.cpick {
-  box-sizing: border-box;
-  height: var(--chip-h);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
+.cpick-select {
+  text-transform: capitalize;
 }
-.cpick__dot {
-  width: 1.2rem;
-  height: 1.2rem;
-  border-radius: 50%;
-  border: 2px solid var(--ink);
-  cursor: pointer;
-  padding: 0;
-  opacity: 0.45;
-  transition: opacity 0.1s, transform 0.1s;
+.cpick-select.skittle--red {
+  background-color: var(--red);
 }
-.cpick__dot:hover {
-  opacity: 0.85;
+.cpick-select.skittle--orange {
+  background-color: var(--orange);
 }
-.cpick__dot--on {
-  opacity: 1;
-  transform: scale(1.18) rotate(-6deg);
+.cpick-select.skittle--yellow {
+  background-color: var(--yellow);
 }
-.cpick__dot.skittle--red {
-  background: var(--red);
+.cpick-select.skittle--purple {
+  background-color: var(--purple);
 }
-.cpick__dot.skittle--orange {
-  background: var(--orange);
+.cpick-select.skittle--green {
+  background-color: var(--green);
 }
-.cpick__dot.skittle--yellow {
-  background: var(--yellow);
-}
-.cpick__dot.skittle--purple {
-  background: var(--purple);
-}
-.cpick__dot.skittle--green {
-  background: var(--green);
+.cpick-select:hover {
+  filter: brightness(1.05);
 }
 
 /* keywords + nested amount groups */

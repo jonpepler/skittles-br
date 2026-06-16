@@ -73,9 +73,9 @@ test.describe('mobile responsiveness', () => {
 
     // The chip-heavy contract editor under a rich, nested statement.
     await host.getByLabel('amount', { exact: true }).fill('3')
-    await host.getByLabel('Colour green').click()
+    await host.getByLabel('Colour', { exact: true }).selectOption('green')
     await host.getByLabel('When').selectOption('receive')
-    await host.getByLabel('Received colour red').click()
+    await host.getByLabel('Received colour').selectOption('red')
     await host.getByLabel('amount kind').selectOption('min')
     await host.getByRole('button', { name: '+ party' }).click()
     await host.getByRole('button', { name: '+ Add clause' }).click()

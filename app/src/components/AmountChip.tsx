@@ -57,13 +57,13 @@ export function AmountChip({
         value={kind}
         onChange={(e) => onChange(defaultFor(e.target.value as Kind, defaultColour))}
       >
-        <option value="number">a number of</option>
+        <option value="number">exactly</option>
         <option value="all">all their</option>
         <option value="eventReq">the required</option>
-        <option value="received">what they received</option>
-        <option value="percent">% of…</option>
-        <option value="min">smallest of…</option>
-        <option value="sum">total of…</option>
+        <option value="received">the received</option>
+        <option value="percent">a percentage</option>
+        <option value="min">the smallest of</option>
+        <option value="sum">the total of</option>
       </select>
 
       {kind === 'number' && (
@@ -118,7 +118,7 @@ export function AmountChip({
           const setItems = (arr: AmountExpr[]): void => onChange({ [kind]: arr } as AmountExpr)
           return (
             <span className="amt__list">
-              <span className="amt__kw">{kind === 'min' ? 'smallest of (' : 'total of ('}</span>
+              <span className="amt__kw">(</span>
               {items.map((item, i) => (
                 <span key={i} className="amt__item">
                   <AmountChip

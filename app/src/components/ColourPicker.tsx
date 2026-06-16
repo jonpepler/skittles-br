@@ -1,6 +1,7 @@
 import { SKITTLE_COLOURS, type SkittleColour } from '../generators/event.js'
 
-/** A row of clickable skittle dots for choosing a colour. */
+/** A single compact, colour-tinted dropdown for choosing a skittle colour.
+ *  One control instead of a row of dots, to keep clause-building uncluttered. */
 export function ColourPicker({
   label,
   value,
@@ -11,18 +12,17 @@ export function ColourPicker({
   onChange: (c: SkittleColour) => void
 }) {
   return (
-    <span className="cpick" role="group" aria-label={label}>
+    <select
+      className={`chip cpick-select skittle--${value}`}
+      aria-label={label}
+      value={value}
+      onChange={(e) => onChange(e.target.value as SkittleColour)}
+    >
       {SKITTLE_COLOURS.map((c) => (
-        <button
-          key={c}
-          type="button"
-          title={c}
-          aria-label={`${label} ${c}`}
-          aria-pressed={c === value}
-          className={`cpick__dot skittle--${c}${c === value ? ' cpick__dot--on' : ''}`}
-          onClick={() => onChange(c)}
-        />
+        <option key={c} value={c}>
+          {c}
+        </option>
       ))}
-    </span>
+    </select>
   )
 }
