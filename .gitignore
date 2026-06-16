@@ -6,3 +6,7 @@ tmp/
 
 # python
 __pycache__/
+
+# Playwright scratch output (the copy under app/ is ignored there too)
+test-results/
+playwright-report/
