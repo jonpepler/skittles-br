@@ -1,5 +1,8 @@
 tmp/
 .vscode/
 
+# agent worktrees and local tooling
+.claude/
+
 # python
 __pycache__/
