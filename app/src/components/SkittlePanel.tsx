@@ -15,10 +15,11 @@ export function SkittlePanel({
         <button
           key={colour}
           className={`skittle-btn skittle-btn--${colour}`}
+          aria-label={`${colour}: ${skittles[colour]}`}
           onClick={() => onIncrement(colour)}
         >
           <span className="skittle__dot" />
-          {colour}: {skittles[colour]}
+          {skittles[colour]}
         </button>
       ))}
     </div>

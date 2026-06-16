@@ -412,19 +412,20 @@ h3 {
   gap: 0.4rem;
 }
 
-/* Skittle holding: a coloured coin with the count inside. */
+/* Skittle holding: the same coloured pill as the collect buttons (a dot plus
+ * the count), so currency reads the same everywhere. */
 .token {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-width: 1.7rem;
-  height: 1.7rem;
-  padding: 0 0.35rem;
-  border-radius: 999px;
-  border: 2px solid var(--ink);
+  gap: 0.4rem;
+  height: 1.9rem;
+  padding: 0 0.7rem;
+  border-radius: 10px;
+  border: 2.5px solid var(--ink);
+  box-shadow: var(--shadow);
   font: inherit;
   font-weight: 800;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   line-height: 1;
   color: var(--ink);
 }

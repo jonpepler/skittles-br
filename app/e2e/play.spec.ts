@@ -33,7 +33,7 @@ async function startGame(
 async function collect(page: Page, colour: string, n: number): Promise<void> {
   const btn = page.locator(`.skittle-btn--${colour}`)
   for (let i = 0; i < n; i++) await btn.click()
-  await expect(btn).toContainText(`${colour}: ${n}`)
+  await expect(btn).toHaveAttribute('aria-label', `${colour}: ${n}`)
 }
 
 test.describe('cross-peer gameplay', () => {
@@ -78,8 +78,12 @@ test.describe('cross-peer gameplay', () => {
     // Host re-signs the countered version, which fires: host −1 red, guest +1.
     await host.locator('.contracts__item').getByRole('button', { name: 'Sign' }).click()
 
-    await expect(host.locator('.skittle-btn--red')).toContainText('red: 2', { timeout: 10_000 })
-    await expect(guest.locator('.skittle-btn--red')).toContainText('red: 1', { timeout: 10_000 })
+    await expect(host.locator('.skittle-btn--red')).toHaveAttribute('aria-label', 'red: 2', {
+      timeout: 10_000
+    })
+    await expect(guest.locator('.skittle-btn--red')).toHaveAttribute('aria-label', 'red: 1', {
+      timeout: 10_000
+    })
 
     await close()
   })
@@ -138,9 +142,15 @@ test.describe('cross-peer gameplay', () => {
     // Guest accepts.
     await guest.locator('.trade__offer').getByRole('button', { name: 'Accept' }).click()
 
-    await expect(host.locator('.skittle-btn--green')).toContainText('green: 1', { timeout: 10_000 })
-    await expect(host.locator('.skittle-btn--red')).toContainText('red: 0', { timeout: 10_000 })
-    await expect(guest.locator('.skittle-btn--red')).toContainText('red: 2', { timeout: 10_000 })
+    await expect(host.locator('.skittle-btn--green')).toHaveAttribute('aria-label', 'green: 1', {
+      timeout: 10_000
+    })
+    await expect(host.locator('.skittle-btn--red')).toHaveAttribute('aria-label', 'red: 0', {
+      timeout: 10_000
+    })
+    await expect(guest.locator('.skittle-btn--red')).toHaveAttribute('aria-label', 'red: 2', {
+      timeout: 10_000
+    })
 
     await close()
   })
