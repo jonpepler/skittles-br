@@ -3,6 +3,7 @@ import { SKITTLE_COLOURS, type SkittleSet } from '../generators/event.js'
 import { emptySkittles } from '../game/state.js'
 import type { PlayerState, TradeOffer } from '../game/types.js'
 import { FactionTitle } from './FactionTitle.js'
+import { SkittleToken } from './SkittleToken.js'
 
 function CostList({ set }: { set: SkittleSet }) {
   const entries = SKITTLE_COLOURS.filter((c) => set[c] > 0)
@@ -10,9 +11,7 @@ function CostList({ set }: { set: SkittleSet }) {
   return (
     <span className="trade__costs">
       {entries.map((c) => (
-        <span key={c} className={`skittle skittle--${c}`}>
-          <span className="skittle__dot" /> {set[c]}
-        </span>
+        <SkittleToken key={c} colour={c} count={set[c]} />
       ))}
     </span>
   )

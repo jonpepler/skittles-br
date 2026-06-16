@@ -1,5 +1,6 @@
 import { FlagImage } from './FlagImage.js'
 import { FactionTitle } from './FactionTitle.js'
+import { SkittleToken } from './SkittleToken.js'
 import { SKITTLE_COLOURS } from '../generators/event.js'
 import type { PlayerState } from '../game/types.js'
 
@@ -21,13 +22,11 @@ export function PlayerCard({
           {player.out && <span className="player-card__out-badge"> OUT</span>}
         </div>
         {player.skittles ? (
-          <ul className="player-card__skittles">
+          <div className="player-card__skittles">
             {SKITTLE_COLOURS.map((colour) => (
-              <li key={colour} className={`skittle skittle--${colour}`}>
-                <span className="skittle__dot" /> {player.skittles![colour]}
-              </li>
+              <SkittleToken key={colour} colour={colour} count={player.skittles![colour]} />
             ))}
-          </ul>
+          </div>
         ) : (
           // Not a neighbour — their skittles are hidden from you.
           <div className="player-card__hidden" title="Only neighbours' skittles are visible">

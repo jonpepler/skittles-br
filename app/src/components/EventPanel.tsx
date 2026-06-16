@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react'
 import { SKITTLE_COLOURS, type GameEvent, type SkittleSet } from '../generators/event.js'
+import { SkittleToken } from './SkittleToken.js'
 
 function SkittleCosts({ set }: { set: SkittleSet }) {
   const entries = SKITTLE_COLOURS.filter((c) => set[c] > 0)
-  if (entries.length === 0) return <span className="event__none">—</span>
+  if (entries.length === 0) return <span className="event__none">nothing</span>
   return (
     <span className="event__costs">
       {entries.map((colour) => (
-        <span key={colour} className={`skittle skittle--${colour}`}>
-          <span className="skittle__dot" /> {set[colour]}
-        </span>
+        <SkittleToken key={colour} colour={colour} count={set[colour]} />
       ))}
     </span>
   )
