@@ -6,6 +6,10 @@ import { test, expect, type Browser, type Page } from '@playwright/test'
  * timer, and a contract negotiated back and forth.
  */
 
+// A fixed starting hand (and per-round allotment) for deterministic holdings.
+// No orange, so a famine demanding orange is unpayable.
+const HAND = { red: 6, orange: 0, yellow: 6, purple: 6, green: 6 }
+
 async function startGame(
   browser: Browser,
   forceEvent?: object
@@ -14,6 +18,9 @@ async function startGame(
   await ctx.addInitScript(() => {
     ;(window as unknown as { __SKITTLES_TRANSPORT__?: string }).__SKITTLES_TRANSPORT__ = 'local'
   })
+  await ctx.addInitScript((h) => {
+    ;(window as unknown as { __SKITTLES_FORCE_HAND__?: object }).__SKITTLES_FORCE_HAND__ = h
+  }, HAND)
   if (forceEvent) {
     await ctx.addInitScript((ev) => {
       ;(window as unknown as { __SKITTLES_FORCE_EVENT__?: object }).__SKITTLES_FORCE_EVENT__ = ev
@@ -29,11 +36,10 @@ async function startGame(
   return { host, guest, close: () => ctx.close() }
 }
 
-/** Collect `n` of a colour on a page, waiting for the count to settle. */
-async function collect(page: Page, colour: string, n: number): Promise<void> {
-  const btn = page.locator(`.skittle-btn--${colour}`)
-  for (let i = 0; i < n; i++) await btn.click()
-  await expect(btn).toHaveAttribute('aria-label', `${colour}: ${n}`)
+/** Read a colour count from a page's own holdings panel. */
+async function holding(page: Page, colour: string): Promise<number> {
+  const txt = await page.locator(`.skittle-panel .skittle--${colour}`).first().innerText()
+  return Number(txt.replace(/[^0-9]/g, '')) || 0
 }
 
 test.describe('cross-peer gameplay', () => {
@@ -42,7 +48,7 @@ test.describe('cross-peer gameplay', () => {
     await host.locator('.game__duration').fill('5') // shortest allowed window
     await host.getByRole('button', { name: 'Start game' }).click()
     await host.getByRole('button', { name: 'Begin' }).click() // dismiss the start splash
-    await host.getByRole('heading', { name: 'Collect skittles' }).waitFor()
+    await host.getByRole('heading', { name: 'Your skittles' }).waitFor()
 
     await host.getByRole('button', { name: 'Trigger first event' }).click()
 
@@ -61,12 +67,12 @@ test.describe('cross-peer gameplay', () => {
     const { host, guest, close } = await startGame(browser)
     await host.getByRole('button', { name: 'Start game' }).click()
     await host.getByRole('button', { name: 'Begin' }).click() // dismiss the start splash
-    await host.getByRole('heading', { name: 'Collect skittles' }).waitFor()
+    await host.getByRole('heading', { name: 'Your skittles' }).waitFor()
 
-    // Host stocks up so it can honour the contract.
-    await collect(host, 'red', 3)
+    const hostRed0 = await holding(host, 'red')
+    const guestRed0 = await holding(guest, 'red')
 
-    // Host proposes: "when signed, I give you 2 red" (red is the default colour).
+    // Host proposes "when signed, I give you 2 red" (red is the default colour).
     await host.getByLabel('red amount').fill('2')
     await host.getByRole('button', { name: 'Propose contract' }).click()
 
@@ -80,12 +86,8 @@ test.describe('cross-peer gameplay', () => {
     // Host re-signs the countered version, which fires: host −1 red, guest +1.
     await host.locator('.contracts__item').getByRole('button', { name: 'Sign' }).click()
 
-    await expect(host.locator('.skittle-btn--red')).toHaveAttribute('aria-label', 'red: 2', {
-      timeout: 10_000
-    })
-    await expect(guest.locator('.skittle-btn--red')).toHaveAttribute('aria-label', 'red: 1', {
-      timeout: 10_000
-    })
+    await expect.poll(() => holding(host, 'red'), { timeout: 10_000 }).toBe(hostRed0 - 1)
+    await expect.poll(() => holding(guest, 'red'), { timeout: 10_000 }).toBe(guestRed0 + 1)
 
     await close()
   })
@@ -93,8 +95,8 @@ test.describe('cross-peer gameplay', () => {
   test('an onEliminate contract hands skittles over when a player is knocked out', async ({
     browser
   }) => {
-    // Force a threat that demands orange, which the host won't have, so the
-    // host is deterministically eliminated.
+    // Force a threat that demands orange, which nobody has, so the host is
+    // deterministically eliminated.
     const famine = {
       name: 'Forced Famine',
       description: '',
@@ -108,9 +110,7 @@ test.describe('cross-peer gameplay', () => {
     await host.locator('.game__duration').fill('5')
     await host.getByRole('button', { name: 'Start game' }).click()
     await host.getByRole('button', { name: 'Begin' }).click() // dismiss the start splash
-    await host.getByRole('heading', { name: 'Collect skittles' }).waitFor()
-
-    await collect(host, 'red', 3) // red to hand over; no orange to pay the gate
+    await host.getByRole('heading', { name: 'Your skittles' }).waitFor()
 
     // Contract: "if I'm eliminated, give you all my red."
     await host.getByLabel('When').selectOption('eliminate')
@@ -133,11 +133,12 @@ test.describe('cross-peer gameplay', () => {
     const { host, guest, close } = await startGame(browser)
     await host.getByRole('button', { name: 'Start game' }).click()
     await host.getByRole('button', { name: 'Begin' }).click() // dismiss the start splash
-    await host.getByRole('heading', { name: 'Collect skittles' }).waitFor()
-
+    await host.getByRole('heading', { name: 'Your skittles' }).waitFor()
     await guest.getByRole('button', { name: 'Begin' }).click() // dismiss the start splash
-    await collect(host, 'red', 2)
-    await collect(guest, 'green', 1)
+
+    const hostRed0 = await holding(host, 'red')
+    const hostGreen0 = await holding(host, 'green')
+    const guestRed0 = await holding(guest, 'red')
 
     // Host offers 2 red for 1 green via the quick-trade panel.
     const form = host.locator('.trade__form')
@@ -148,15 +149,9 @@ test.describe('cross-peer gameplay', () => {
     // Guest accepts.
     await guest.locator('.trade__offer').getByRole('button', { name: 'Accept' }).click()
 
-    await expect(host.locator('.skittle-btn--green')).toHaveAttribute('aria-label', 'green: 1', {
-      timeout: 10_000
-    })
-    await expect(host.locator('.skittle-btn--red')).toHaveAttribute('aria-label', 'red: 0', {
-      timeout: 10_000
-    })
-    await expect(guest.locator('.skittle-btn--red')).toHaveAttribute('aria-label', 'red: 2', {
-      timeout: 10_000
-    })
+    await expect.poll(() => holding(host, 'green'), { timeout: 10_000 }).toBe(hostGreen0 + 1)
+    await expect.poll(() => holding(host, 'red'), { timeout: 10_000 }).toBe(hostRed0 - 2)
+    await expect.poll(() => holding(guest, 'red'), { timeout: 10_000 }).toBe(guestRed0 + 2)
 
     await close()
   })

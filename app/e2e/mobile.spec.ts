@@ -56,7 +56,7 @@ test.describe('mobile responsiveness', () => {
     // Start and reach the active phase.
     await host.getByRole('button', { name: 'Start game' }).click()
     await host.getByRole('button', { name: 'Begin' }).click() // dismiss the start splash
-    await host.getByRole('heading', { name: 'Collect skittles' }).waitFor()
+    await host.getByRole('heading', { name: 'Your skittles' }).waitFor()
 
     // Trigger an event so the event panel is populated.
     await host.getByRole('button', { name: 'Trigger first event' }).click()
@@ -111,7 +111,7 @@ test.describe('mobile responsiveness', () => {
     await host.getByLabel('Custom rounds').fill('1')
     await host.getByRole('button', { name: 'Start game' }).click()
     await host.getByRole('button', { name: 'Begin' }).click() // dismiss the start splash
-    await host.getByRole('heading', { name: 'Collect skittles' }).waitFor()
+    await host.getByRole('heading', { name: 'Your skittles' }).waitFor()
 
     await host.getByRole('button', { name: 'Trigger first event' }).click()
     // Wait for the game to reach the complete phase (host resolves after window).

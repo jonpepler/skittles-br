@@ -66,15 +66,14 @@ test('two peers connect, start, and share skittle state (needs relay egress)', a
 
     await a.getByRole('button', { name: 'Start game' }).click()
     await a.getByRole('button', { name: 'Begin' }).click() // dismiss the start splash
-    await expect(b.getByRole('heading', { name: 'Collect skittles' })).toBeVisible({
+    await expect(b.getByRole('heading', { name: 'Your skittles' })).toBeVisible({
       timeout: 10_000
     })
 
-    // Guest collects a skittle; the host validates and rebroadcasts, so the
-    // guest's own panel updates from the round-trip.
+    // The host dealt hands on start and rebroadcast; the guest renders its own
+    // holdings from that round-trip.
     await b.getByRole('button', { name: 'Begin' }).click() // dismiss the start splash
-    await b.getByRole('button', { name: /red: 0/ }).click()
-    await expect(b.getByRole('button', { name: /red: 1/ })).toBeVisible({ timeout: 10_000 })
+    await expect(b.locator('.skittle-panel .token').first()).toBeVisible({ timeout: 10_000 })
 
     await a.screenshot({ path: 'e2e/screenshots/p2p-host.png', fullPage: true })
     await b.screenshot({ path: 'e2e/screenshots/p2p-guest.png', fullPage: true })

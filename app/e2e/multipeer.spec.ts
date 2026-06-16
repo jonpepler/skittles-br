@@ -29,7 +29,7 @@ test.describe('multi-peer (local transport)', () => {
 
     // Host starts the game; guests enter the active phase.
     await host.getByRole('button', { name: 'Start game' }).click()
-    await expect(g1.getByRole('heading', { name: 'Collect skittles' })).toBeVisible({
+    await expect(g1.getByRole('heading', { name: 'Your skittles' })).toBeVisible({
       timeout: 10_000
     })
 
