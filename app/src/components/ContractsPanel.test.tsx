@@ -36,11 +36,11 @@ describe('ContractsPanel command editor', () => {
   it('proposes a one-shot gift from the default clause', async () => {
     const onPropose = vi.fn()
     renderPanel({ onPropose })
-    await userEvent.clear(screen.getByLabelText('amount', { exact: true }))
-    await userEvent.type(screen.getByLabelText('amount', { exact: true }), '3')
-    // Switch the single colour from the default red to green.
-    await userEvent.click(screen.getByLabelText('Colours green'))
-    await userEvent.click(screen.getByLabelText('Colours red'))
+    // Add green, set it to 3, then drop the default red: a gift of 3 green.
+    await userEvent.click(screen.getByLabelText('green', { exact: true }))
+    await userEvent.clear(screen.getByLabelText('green amount'))
+    await userEvent.type(screen.getByLabelText('green amount'), '3')
+    await userEvent.click(screen.getByLabelText('red', { exact: true }))
     await userEvent.click(screen.getByRole('button', { name: 'Propose contract' }))
 
     const [parties, onSign, onEvent, onReceive] = onPropose.mock.calls[0]!
@@ -109,9 +109,9 @@ describe('ContractsPanel command editor', () => {
     renderPanel({ contracts: [contract], onRevise })
     const item = screen.getByText(/1\/2 signed/).closest('.contracts__item') as HTMLElement
     await userEvent.click(within(item).getByRole('button', { name: 'Counter' }))
-    // The counter editor is pre-filled with the contract's clause.
-    await userEvent.clear(within(item).getByLabelText('amount', { exact: true }))
-    await userEvent.type(within(item).getByLabelText('amount', { exact: true }), '1')
+    // The counter editor is pre-filled with the contract's clause (2 red).
+    await userEvent.clear(within(item).getByLabelText('red amount'))
+    await userEvent.type(within(item).getByLabelText('red amount'), '1')
     await userEvent.click(within(item).getByRole('button', { name: 'Send counter-offer' }))
 
     expect(onRevise).toHaveBeenCalledTimes(1)

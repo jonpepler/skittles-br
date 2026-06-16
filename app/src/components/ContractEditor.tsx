@@ -2,7 +2,6 @@ import { useState } from 'react'
 import type { PlayerState } from '../game/types.js'
 import type { Transfer } from '../game/contracts.js'
 import { AmountChip } from './AmountChip.js'
-import { ColourPicker } from './ColourPicker.js'
 import { FactionSelect } from './FactionSelect.js'
 import { FactionTitle } from './FactionTitle.js'
 import { ContractSummary } from './ContractSummary.js'
@@ -153,12 +152,6 @@ export function ContractEditor({
               />
             </span>
             <AmountChip value={c.amount} onChange={(amount) => patch(c.key, { amount })} />
-            <span className="amt__kw">of</span>
-            <ColourPicker
-              label="Colours"
-              values={c.colours}
-              onChange={(cols) => patch(c.key, { colours: cols })}
-            />
           </div>
         </div>
       ))}

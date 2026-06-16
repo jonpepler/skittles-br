@@ -65,13 +65,13 @@ test.describe('cross-peer gameplay', () => {
     await collect(host, 'red', 3)
 
     // Host proposes: "when signed, I give you 2 red" (red is the default colour).
-    await host.getByLabel('amount', { exact: true }).fill('2')
+    await host.getByLabel('red amount').fill('2')
     await host.getByRole('button', { name: 'Propose contract' }).click()
 
     // Guest counters it down to 1 red.
     await guest.locator('.contracts__item').getByRole('button', { name: 'Counter' }).click()
     const counter = guest.locator('.contracts__item .editor')
-    await counter.getByLabel('amount', { exact: true }).fill('1')
+    await counter.getByLabel('red amount').fill('1')
     await counter.getByRole('button', { name: 'Send counter-offer' }).click()
 
     // Host re-signs the countered version, which fires: host −1 red, guest +1.

@@ -729,14 +729,43 @@ input.chip {
   padding: 0 0.6rem;
   font-weight: 800;
 }
-.cpick {
+/* coloured unit chips: a count fused to its colour dot */
+.units {
   box-sizing: border-box;
-  height: var(--chip-h);
+  min-height: var(--chip-h);
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+.unit {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
 }
-.cpick__dot {
+.unit--on {
+  gap: 0.15rem;
+  padding: 0.1rem 0.25rem 0.1rem 0.15rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: #fff;
+}
+.unit__n {
+  width: 2.2ch;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-weight: 800;
+  text-align: center;
+  padding: 0;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.unit__n::-webkit-outer-spin-button,
+.unit__n::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.unit__dot {
   width: 1.4rem;
   height: 1.4rem;
   flex: 0 0 auto;
@@ -744,30 +773,58 @@ input.chip {
   border: 2px solid var(--ink);
   cursor: pointer;
   padding: 0;
-  opacity: 0.4;
-  transition: opacity 0.1s, transform 0.1s;
+  opacity: 0.35;
+  transition: opacity 0.1s;
 }
-.cpick__dot:hover {
-  opacity: 0.8;
+.unit__dot:hover {
+  opacity: 0.7;
 }
-.cpick__dot--on {
+.unit--on .unit__dot {
   opacity: 1;
-  transform: scale(1.2) rotate(-6deg);
 }
-.cpick__dot.skittle--red {
+.unit__dot.skittle--red {
   background: var(--red);
 }
-.cpick__dot.skittle--orange {
+.unit__dot.skittle--orange {
   background: var(--orange);
 }
-.cpick__dot.skittle--yellow {
+.unit__dot.skittle--yellow {
   background: var(--yellow);
 }
-.cpick__dot.skittle--purple {
+.unit__dot.skittle--purple {
   background: var(--purple);
 }
-.cpick__dot.skittle--green {
+.unit__dot.skittle--green {
   background: var(--green);
+}
+.amt__addlimit {
+  border: 2px dashed var(--ink);
+  background: transparent;
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.amt__addlimit:hover {
+  opacity: 1;
+}
+.amt__limit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.amt__dellimit {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-weight: 800;
+  padding: 0 0.2rem;
+  opacity: 0.6;
+}
+.amt__dellimit:hover {
+  opacity: 1;
 }
 
 /* keywords + nested amount groups */

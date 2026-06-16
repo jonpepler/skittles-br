@@ -28,8 +28,9 @@ test.describe('contract/trade UI', () => {
     const shot = (name: string) => contracts.screenshot({ path: `e2e/screenshots/${name}.png` })
 
     // 1. Default clause → a one-shot gift of two colours.
-    await host.getByLabel('amount', { exact: true }).fill('3')
-    await host.getByLabel('Colours green').click()
+    await host.getByLabel('red amount').fill('3')
+    await host.getByLabel('green', { exact: true }).click()
+    await host.getByLabel('green amount').fill('2')
     await shot('contract-1-gift')
 
     // 2. Recurring: cover the event's required colour each event.
@@ -44,7 +45,7 @@ test.describe('contract/trade UI', () => {
     await shot('contract-3-receive-percent')
 
     // 4. Capped: a percentage, but at most a fixed number.
-    await host.getByLabel('amount limit').selectOption('cap')
+    await host.getByRole('button', { name: /limit/ }).click()
     await host.getByLabel('amount limit amount').fill('5')
     await shot('contract-4-nested')
 

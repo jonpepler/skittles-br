@@ -1,29 +1,29 @@
 /**
  * Editor-side model for composing contracts as "commands".
  *
- * A {@link ClauseDraft} is the editable form of one transfer-with-trigger. The
- * colour(s) live on the clause (you can target several at once), and the
- * {@link DraftAmount} is colour-free: "exactly 3", "all their", "a percentage",
- * optionally capped ("but at most N") or topped up ("plus N"). These pure
- * helpers convert drafts to engine contracts and back, so the command editor
- * and the negotiation view share one source of truth and can be unit-tested
- * without the DOM.
+ * A {@link ClauseDraft} is the editable form of one transfer-with-trigger. Its
+ * {@link DraftAmount} bundles the colours *and* their counts into one unit
+ * map — "exactly 2 red and 2 green" is `{ kind: 'number', units: { red: 2,
+ * green: 2 } }` — with an optional limit ("but at most N" / "plus N"). These
+ * pure helpers convert drafts to engine contracts and back, so the command
+ * editor and the negotiation view share one source of truth and can be
+ * unit-tested without the DOM.
  */
 import { SKITTLE_COLOURS, type SkittleColour } from '../generators/event.js'
 import type { AmountExpr, Contract, GiveSpec, Transfer } from '../game/contracts.js'
 
 export type Trigger = 'now' | 'event' | 'receive' | 'eliminate' | 'default'
 
-/** The base shape of an amount, before a colour is filled in. */
+/** The base shape of an amount. Counts only matter for `number`; the other
+ *  kinds ("all their", "the required"…) are dynamic and self-describing. */
 export type AmountKind = 'number' | 'all' | 'eventReq' | 'received' | 'percent'
-/** An optional limit applied to the base amount. */
+/** An optional limit applied to the base amount of every colour. */
 export type Modifier = 'none' | 'cap' | 'plus'
 
-/** A colour-free amount: the clause supplies the colour(s) it applies to. */
 export interface DraftAmount {
   kind: AmountKind
-  /** Count for `number`. */
-  count: number
+  /** Selected colours mapped to their count (count used only for `number`). */
+  units: Partial<Record<SkittleColour, number>>
   /** Percentage for `percent` (always of what they received). */
   percent: number
   modifier: Modifier
@@ -36,8 +36,6 @@ export interface ClauseDraft {
   trigger: Trigger
   from: string
   to: string
-  /** The colours this clause moves; the amount applies to each of them. */
-  colours: SkittleColour[]
   amount: DraftAmount
 }
 
@@ -47,17 +45,22 @@ export function clauseKey(): string {
 }
 
 export function newAmount(): DraftAmount {
-  return { kind: 'number', count: 1, percent: 50, modifier: 'none', modAmount: 1 }
+  return { kind: 'number', units: { red: 1 }, percent: 50, modifier: 'none', modAmount: 1 }
 }
 
 export function newClause(from: string, to: string): ClauseDraft {
-  return { key: clauseKey(), trigger: 'now', from, to, colours: ['red'], amount: newAmount() }
+  return { key: clauseKey(), trigger: 'now', from, to, amount: newAmount() }
+}
+
+/** The colours an amount targets, in palette order. */
+export function selectedColours(a: DraftAmount): SkittleColour[] {
+  return SKITTLE_COLOURS.filter((c) => a.units[c] !== undefined)
 }
 
 function baseExpr(a: DraftAmount, colour: SkittleColour): AmountExpr {
   switch (a.kind) {
     case 'number':
-      return a.count
+      return a.units[colour] ?? 0
     case 'all':
       return { all: colour }
     case 'eventReq':
@@ -69,12 +72,19 @@ function baseExpr(a: DraftAmount, colour: SkittleColour): AmountExpr {
   }
 }
 
-/** Turn a colour-free draft amount into a concrete engine expression. */
-export function materialize(a: DraftAmount, colour: SkittleColour): AmountExpr {
+/** The engine expression for one colour of an amount (with its limit applied). */
+export function colourExpr(a: DraftAmount, colour: SkittleColour): AmountExpr {
   const base = baseExpr(a, colour)
   if (a.modifier === 'cap') return { min: [base, a.modAmount] }
   if (a.modifier === 'plus') return { sum: [base, a.modAmount] }
   return base
+}
+
+/** Spread one draft amount across its colours into an engine give-spec. */
+export function amountToGive(a: DraftAmount): GiveSpec {
+  const give: GiveSpec = {}
+  for (const colour of selectedColours(a)) give[colour] = colourExpr(a, colour)
+  return give
 }
 
 function bucketOf(t: Trigger): keyof Buckets {
@@ -96,9 +106,7 @@ export interface Buckets {
 export function clausesToBuckets(clauses: ClauseDraft[]): Buckets {
   const buckets: Buckets = { onSign: [], onEvent: [], onReceive: [], onEliminate: [], onDefault: [] }
   for (const c of clauses) {
-    const give: GiveSpec = {}
-    for (const colour of c.colours) give[colour] = materialize(c.amount, colour)
-    buckets[bucketOf(c.trigger)].push({ from: c.from, to: c.to, give })
+    buckets[bucketOf(c.trigger)].push({ from: c.from, to: c.to, give: amountToGive(c.amount) })
   }
   return buckets
 }
@@ -111,13 +119,13 @@ const TRIGGER_OF: Record<keyof Buckets, Trigger> = {
   onDefault: 'default'
 }
 
-/** Read one engine expression back into a colour-free draft amount. */
-export function parseAmount(expr: AmountExpr): DraftAmount {
-  const a = newAmount()
+/** The kind/limit shape of one engine expression, plus the count it carries. */
+function parseExpr(expr: AmountExpr): { shape: Omit<DraftAmount, 'units'>; count: number } {
+  const shape: Omit<DraftAmount, 'units'> = { kind: 'number', percent: 50, modifier: 'none', modAmount: 1 }
   let base: AmountExpr = expr
   if (typeof expr === 'object' && 'min' in expr && expr.min.length === 2 && typeof expr.min[1] === 'number') {
-    a.modifier = 'cap'
-    a.modAmount = expr.min[1]
+    shape.modifier = 'cap'
+    shape.modAmount = expr.min[1]
     base = expr.min[0]!
   } else if (
     typeof expr === 'object' &&
@@ -125,48 +133,42 @@ export function parseAmount(expr: AmountExpr): DraftAmount {
     expr.sum.length === 2 &&
     typeof expr.sum[1] === 'number'
   ) {
-    a.modifier = 'plus'
-    a.modAmount = expr.sum[1]
+    shape.modifier = 'plus'
+    shape.modAmount = expr.sum[1]
     base = expr.sum[0]!
   }
+  let count = 1
   if (typeof base === 'number') {
-    a.kind = 'number'
-    a.count = base
-  } else if ('all' in base) a.kind = 'all'
-  else if ('eventReq' in base) a.kind = 'eventReq'
-  else if ('received' in base) a.kind = 'received'
+    shape.kind = 'number'
+    count = base
+  } else if ('all' in base) shape.kind = 'all'
+  else if ('eventReq' in base) shape.kind = 'eventReq'
+  else if ('received' in base) shape.kind = 'received'
   else if ('percent' in base) {
-    a.kind = 'percent'
-    a.percent = base.percent
+    shape.kind = 'percent'
+    shape.percent = base.percent
   }
-  return a
+  return { shape, count }
 }
 
 /** Reverse: turn an engine contract back into editable clause drafts, grouping
- *  colours that share the same amount into a single multi-colour clause. */
+ *  colours that share a kind/limit into one multi-colour clause. */
 export function contractToClauses(c: Contract): ClauseDraft[] {
   const out: ClauseDraft[] = []
   const add = (trigger: Trigger, transfers: Transfer[]): void => {
     for (const t of transfers) {
-      const groups: { amount: DraftAmount; colours: SkittleColour[] }[] = []
+      const groups = new Map<string, DraftAmount>()
       for (const colour of SKITTLE_COLOURS) {
         const expr = t.give[colour]
         if (expr === undefined) continue
-        const amount = parseAmount(expr)
-        const key = JSON.stringify(amount)
-        const group = groups.find((g) => JSON.stringify(g.amount) === key)
-        if (group) group.colours.push(colour)
-        else groups.push({ amount, colours: [colour] })
+        const { shape, count } = parseExpr(expr)
+        const key = JSON.stringify(shape)
+        const amount = groups.get(key) ?? { ...shape, units: {} }
+        amount.units[colour] = count
+        groups.set(key, amount)
       }
-      for (const g of groups) {
-        out.push({
-          key: clauseKey(),
-          trigger,
-          from: t.from,
-          to: t.to,
-          colours: g.colours,
-          amount: g.amount
-        })
+      for (const amount of groups.values()) {
+        out.push({ key: clauseKey(), trigger, from: t.from, to: t.to, amount })
       }
     }
   }

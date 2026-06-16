@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import {
+  amountToGive,
   clausesToBuckets,
   contractToClauses,
-  materialize,
   newAmount,
   newClause,
-  parseAmount,
+  selectedColours,
   type ClauseDraft,
   type DraftAmount
 } from './contractDraft.js'
@@ -13,84 +13,62 @@ import type { Contract } from '../game/contracts.js'
 
 const amt = (p: Partial<DraftAmount> = {}): DraftAmount => ({ ...newAmount(), ...p })
 
-describe('materialize', () => {
-  it('fills the clause colour into each amount kind', () => {
-    expect(materialize(amt({ kind: 'number', count: 2 }), 'green')).toBe(2)
-    expect(materialize(amt({ kind: 'all' }), 'green')).toEqual({ all: 'green' })
-    expect(materialize(amt({ kind: 'eventReq' }), 'red')).toEqual({ eventReq: 'red' })
-    expect(materialize(amt({ kind: 'received' }), 'red')).toEqual({ received: 'red' })
-    expect(materialize(amt({ kind: 'percent', percent: 25 }), 'red')).toEqual({
-      percent: 25,
-      of: { received: 'red' }
+describe('amountToGive', () => {
+  it('spreads per-colour counts for an exact gift', () => {
+    expect(amountToGive(amt({ kind: 'number', units: { red: 2, green: 3 } }))).toEqual({
+      red: 2,
+      green: 3
     })
   })
 
-  it('wraps a cap as min and a top-up as sum', () => {
+  it('fills each colour into a dynamic kind', () => {
+    expect(amountToGive(amt({ kind: 'all', units: { red: 1, green: 1 } }))).toEqual({
+      red: { all: 'red' },
+      green: { all: 'green' }
+    })
+    expect(amountToGive(amt({ kind: 'percent', percent: 25, units: { red: 1 } }))).toEqual({
+      red: { percent: 25, of: { received: 'red' } }
+    })
+  })
+
+  it('wraps a cap as min and a top-up as sum, per colour', () => {
     expect(
-      materialize(amt({ kind: 'percent', percent: 50, modifier: 'cap', modAmount: 3 }), 'red')
-    ).toEqual({ min: [{ percent: 50, of: { received: 'red' } }, 3] })
+      amountToGive(amt({ kind: 'percent', percent: 50, units: { red: 1 }, modifier: 'cap', modAmount: 3 }))
+    ).toEqual({ red: { min: [{ percent: 50, of: { received: 'red' } }, 3] } })
     expect(
-      materialize(amt({ kind: 'number', count: 2, modifier: 'plus', modAmount: 1 }), 'red')
-    ).toEqual({ sum: [2, 1] })
+      amountToGive(amt({ kind: 'number', units: { red: 2 }, modifier: 'plus', modAmount: 1 }))
+    ).toEqual({ red: { sum: [2, 1] } })
+  })
+})
+
+describe('selectedColours', () => {
+  it('returns chosen colours in palette order', () => {
+    expect(selectedColours(amt({ units: { green: 1, red: 1 } }))).toEqual(['red', 'green'])
   })
 })
 
 describe('clausesToBuckets', () => {
-  it('routes clauses into the right bucket and applies the colour to each', () => {
+  it('routes clauses into the right bucket', () => {
     const clauses: ClauseDraft[] = [
-      { key: 'a', trigger: 'now', from: 'me', to: 'you', colours: ['green', 'red'], amount: amt({ count: 2 }) },
-      { key: 'b', trigger: 'event', from: 'me', to: 'you', colours: ['red'], amount: amt({ kind: 'eventReq' }) },
-      {
-        key: 'c',
-        trigger: 'receive',
-        from: 'me',
-        to: 'you',
-        colours: ['red'],
-        amount: amt({ kind: 'percent', percent: 50 })
-      }
+      { key: 'a', trigger: 'now', from: 'me', to: 'you', amount: amt({ units: { green: 2, red: 2 } }) },
+      { key: 'b', trigger: 'event', from: 'me', to: 'you', amount: amt({ kind: 'eventReq', units: { red: 1 } }) }
     ]
     const b = clausesToBuckets(clauses)
-    expect(b.onSign).toEqual([{ from: 'me', to: 'you', give: { green: 2, red: 2 } }])
+    expect(b.onSign).toEqual([{ from: 'me', to: 'you', give: { red: 2, green: 2 } }])
     expect(b.onEvent).toEqual([{ from: 'me', to: 'you', give: { red: { eventReq: 'red' } } }])
-    expect(b.onReceive).toEqual([
-      { from: 'me', to: 'you', give: { red: { percent: 50, of: { received: 'red' } } } }
-    ])
-  })
-})
-
-describe('parseAmount', () => {
-  it('reads engine expressions back into draft amounts', () => {
-    expect(parseAmount(3)).toMatchObject({ kind: 'number', count: 3, modifier: 'none' })
-    expect(parseAmount({ all: 'red' })).toMatchObject({ kind: 'all' })
-    expect(parseAmount({ percent: 25, of: { received: 'red' } })).toMatchObject({
-      kind: 'percent',
-      percent: 25
-    })
-    expect(parseAmount({ min: [{ all: 'red' }, 5] })).toMatchObject({
-      kind: 'all',
-      modifier: 'cap',
-      modAmount: 5
-    })
-    expect(parseAmount({ sum: [2, 1] })).toMatchObject({
-      kind: 'number',
-      count: 2,
-      modifier: 'plus',
-      modAmount: 1
-    })
   })
 })
 
 describe('contractToClauses', () => {
-  it('round-trips with clausesToBuckets and groups colours that share an amount', () => {
+  it('round-trips and groups colours that share a kind/limit', () => {
     const clauses: ClauseDraft[] = [
-      { key: 'a', trigger: 'now', from: 'me', to: 'you', colours: ['red', 'green'], amount: amt({ count: 2 }) },
+      { key: 'a', trigger: 'now', from: 'me', to: 'you', amount: amt({ units: { red: 2, green: 3 } }) },
       {
         key: 'b',
         trigger: 'receive',
         from: 'me',
         to: 'you',
-        colours: ['red'],
-        amount: amt({ kind: 'percent', percent: 25 })
+        amount: amt({ kind: 'percent', percent: 25, units: { red: 1 } })
       }
     ]
     const buckets = clausesToBuckets(clauses)
@@ -108,9 +86,9 @@ describe('contractToClauses', () => {
       signFired: false
     }
     const back = contractToClauses(contract)
-    expect(back.map((c) => ({ trigger: c.trigger, colours: c.colours, amount: c.amount }))).toEqual([
-      { trigger: 'now', colours: ['red', 'green'], amount: amt({ count: 2 }) },
-      { trigger: 'receive', colours: ['red'], amount: amt({ kind: 'percent', percent: 25 }) }
+    expect(back.map((c) => ({ trigger: c.trigger, amount: c.amount }))).toEqual([
+      { trigger: 'now', amount: amt({ units: { red: 2, green: 3 } }) },
+      { trigger: 'receive', amount: amt({ kind: 'percent', percent: 25, units: { red: 1 } }) }
     ])
   })
 })
@@ -118,7 +96,8 @@ describe('contractToClauses', () => {
 describe('newClause', () => {
   it('starts as a single red, "exactly 1" gift on signing', () => {
     const c = newClause('me', 'you')
-    expect(c).toMatchObject({ trigger: 'now', from: 'me', to: 'you', colours: ['red'] })
+    expect(c).toMatchObject({ trigger: 'now', from: 'me', to: 'you' })
     expect(c.amount).toEqual(newAmount())
+    expect(selectedColours(c.amount)).toEqual(['red'])
   })
 })
