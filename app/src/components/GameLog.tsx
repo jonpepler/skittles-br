@@ -62,6 +62,11 @@ export function GameLog({
                   {who(e.player)} — {e.note} <Skittles set={e.gained} />
                 </>
               )}
+              {e.kind === 'conquered' && (
+                <>
+                  ⚔️ {who(e.attacker)} conquered {who(e.target)}, seizing <Skittles set={e.spoils} />
+                </>
+              )}
             </span>
           </li>
         ))}

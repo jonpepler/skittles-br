@@ -9,6 +9,7 @@ import { EventPanel } from './EventPanel.js'
 import { ShareInvite } from './ShareInvite.js'
 import { TradePanel } from './TradePanel.js'
 import { ContractsPanel } from './ContractsPanel.js'
+import { WarPanel } from './WarPanel.js'
 import { GameLog } from './GameLog.js'
 import { StartSplash } from './StartSplash.js'
 
@@ -189,6 +190,14 @@ export function GameScreen({
                 onSign={game.signContract}
                 onRevise={game.reviseContract}
                 onCancel={game.cancelContract}
+              />
+              <WarPanel
+                players={players}
+                selfId={selfId!}
+                attacks={state.attacks}
+                onAttack={game.declareAttack}
+                onDefend={game.defend}
+                onWithdraw={game.withdrawAttack}
               />
             </>
           )}

@@ -75,6 +75,9 @@ export interface GameRoomApi {
   proposeTrade: (to: string, give: SkittleSet, receive: SkittleSet) => void
   acceptTrade: (offerId: string) => void
   cancelTrade: (offerId: string) => void
+  declareAttack: (to: string, force: number) => void
+  defend: (attackId: string, force: number) => void
+  withdrawAttack: (attackId: string) => void
   proposeContract: (
     parties: string[],
     onSign: Transfer[],
@@ -337,6 +340,9 @@ export function useGameRoom(roomCode: string, role: Role): GameRoomApi {
     proposeTrade: useCallback((to: string, give: SkittleSet, receive: SkittleSet) => dispatch({ type: 'proposeTrade', to, give, receive }), [dispatch]),
     acceptTrade: useCallback((offerId: string) => dispatch({ type: 'acceptTrade', offerId }), [dispatch]),
     cancelTrade: useCallback((offerId: string) => dispatch({ type: 'cancelTrade', offerId }), [dispatch]),
+    declareAttack: useCallback((to: string, force: number) => dispatch({ type: 'declareAttack', to, force }), [dispatch]),
+    defend: useCallback((attackId: string, force: number) => dispatch({ type: 'defend', attackId, force }), [dispatch]),
+    withdrawAttack: useCallback((attackId: string) => dispatch({ type: 'withdrawAttack', attackId }), [dispatch]),
     proposeContract: useCallback((parties: string[], onSign: Transfer[], onEvent: Transfer[], onReceive: Transfer[], onEliminate: Transfer[], onDefault: Transfer[], expiresRound: number | null) => dispatch({ type: 'proposeContract', parties, onSign, onEvent, onReceive, onEliminate, onDefault, expiresRound }), [dispatch]),
     signContract: useCallback((contractId: string) => dispatch({ type: 'signContract', contractId }), [dispatch]),
     reviseContract: useCallback((contractId: string, parties: string[], onSign: Transfer[], onEvent: Transfer[], onReceive: Transfer[], onEliminate: Transfer[], onDefault: Transfer[], expiresRound: number | null) => dispatch({ type: 'reviseContract', contractId, parties, onSign, onEvent, onReceive, onEliminate, onDefault, expiresRound }), [dispatch]),

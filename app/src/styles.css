@@ -1324,3 +1324,41 @@ input.chip {
     height: 5rem;
   }
 }
+
+/* ── War panel ──────────────────────────────────────────────────────────── */
+.war {
+  margin-top: 1.5rem;
+}
+.war__form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+.war__list {
+  margin-top: 0.8rem;
+}
+.war__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+.war__row:last-child {
+  border-bottom: none;
+}
+.war__who {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.war__act {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
