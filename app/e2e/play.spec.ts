@@ -6,11 +6,19 @@ import { test, expect, type Browser, type Page } from '@playwright/test'
  * timer, and a contract negotiated back and forth.
  */
 
-async function startGame(browser: Browser): Promise<{ host: Page; guest: Page; close: () => Promise<void> }> {
+async function startGame(
+  browser: Browser,
+  forceEvent?: object
+): Promise<{ host: Page; guest: Page; close: () => Promise<void> }> {
   const ctx = await browser.newContext()
   await ctx.addInitScript(() => {
     ;(window as unknown as { __SKITTLES_TRANSPORT__?: string }).__SKITTLES_TRANSPORT__ = 'local'
   })
+  if (forceEvent) {
+    await ctx.addInitScript((ev) => {
+      ;(window as unknown as { __SKITTLES_FORCE_EVENT__?: object }).__SKITTLES_FORCE_EVENT__ = ev
+    }, forceEvent)
+  }
   const host = await ctx.newPage()
   await host.goto('/')
   await host.getByRole('button', { name: 'Create game' }).click()
@@ -76,9 +84,42 @@ test.describe('cross-peer gameplay', () => {
     await close()
   })
 
-  // Note: onEliminate is covered by a deterministic unit test. An e2e for it
-  // would need to force a specific event kind (events are now randomly threats
-  // or opportunities), so it's intentionally not exercised here.
+  test('an onEliminate contract hands skittles over when a player is knocked out', async ({
+    browser
+  }) => {
+    // Force a threat that demands orange, which the host won't have, so the
+    // host is deterministically eliminated.
+    const famine = {
+      name: 'Forced Famine',
+      description: '',
+      kind: 'threat',
+      fail: 'eliminate',
+      requirement: { red: 0, orange: 5, yellow: 0, purple: 0, green: 0 },
+      reward: { red: 0, orange: 0, yellow: 0, purple: 0, green: 0 },
+      penalty: { red: 0, orange: 0, yellow: 0, purple: 0, green: 0 }
+    }
+    const { host, guest, close } = await startGame(browser, famine)
+    await host.locator('.game__duration').fill('5')
+    await host.getByRole('button', { name: 'Start game' }).click()
+    await host.getByRole('heading', { name: 'Collect skittles' }).waitFor()
+
+    await collect(host, 'red', 3) // red to hand over; no orange to pay the gate
+
+    // Contract: "if I'm eliminated, give you all my red."
+    await host.getByLabel('When').selectOption('eliminate')
+    await host.getByLabel('amount kind').selectOption('all')
+    await host.getByRole('button', { name: 'Propose contract' }).click()
+    await guest.locator('.contracts__item').getByRole('button', { name: 'Sign' }).click()
+
+    await host.getByRole('button', { name: 'Trigger first event' }).click()
+
+    // The host can't pay, is eliminated, and its red was handed over (0 left).
+    const self = host.locator('.player-card--self')
+    await expect(self.getByText('OUT')).toBeVisible({ timeout: 10_000 })
+    await expect(self.locator('.skittle--red')).toContainText('0', { timeout: 10_000 })
+
+    await close()
+  })
 
   test('a direct two-way trade swaps skittles when accepted', async ({ browser }) => {
     const { host, guest, close } = await startGame(browser)

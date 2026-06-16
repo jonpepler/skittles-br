@@ -12,7 +12,12 @@ import {
 } from '../game/state.js'
 import type { GameAction, GameState, Role } from '../game/types.js'
 import type { Transfer } from '../game/contracts.js'
-import type { SkittleColour, SkittleSet } from '../generators/event.js'
+import type { GameEvent, SkittleColour, SkittleSet } from '../generators/event.js'
+
+/** Test/scripting hook: force the next event the host triggers, if set. */
+function forcedEvent(): GameEvent | undefined {
+  return (globalThis as { __SKITTLES_FORCE_EVENT__?: GameEvent }).__SKITTLES_FORCE_EVENT__
+}
 import { encryptBackup } from '../game/crypto/backup.js'
 import {
   collectShares,
@@ -321,7 +326,7 @@ export function useGameRoom(roomCode: string, role: Role): GameRoomApi {
     incrementSkittle: useCallback((colour: SkittleColour) => dispatch({ type: 'incrementSkittle', colour }), [dispatch]),
     start: useCallback(() => dispatch({ type: 'start' }), [dispatch]),
     reset: useCallback(() => dispatch({ type: 'reset' }), [dispatch]),
-    triggerEvent: useCallback(() => dispatch({ type: 'triggerEvent' }), [dispatch]),
+    triggerEvent: useCallback(() => dispatch({ type: 'triggerEvent', event: forcedEvent() }), [dispatch]),
     setEventDuration: useCallback((seconds: number) => dispatch({ type: 'setEventDuration', seconds }), [dispatch]),
     setRounds: useCallback((rounds: number) => dispatch({ type: 'setRounds', rounds }), [dispatch]),
     setVisibility: useCallback((hideNonNeighbours: boolean) => dispatch({ type: 'setVisibility', hideNonNeighbours }), [dispatch]),

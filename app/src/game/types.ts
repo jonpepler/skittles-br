@@ -72,7 +72,7 @@ export type GameAction =
   | { type: 'setEventDuration'; seconds: number }
   | { type: 'setRounds'; rounds: number }
   | { type: 'setVisibility'; hideNonNeighbours: boolean }
-  | { type: 'triggerEvent' }
+  | { type: 'triggerEvent'; event?: GameEvent }
   | { type: 'resolveEvent' }
   | { type: 'proposeTrade'; to: string; give: SkittleSet; receive: SkittleSet }
   | { type: 'acceptTrade'; offerId: string }

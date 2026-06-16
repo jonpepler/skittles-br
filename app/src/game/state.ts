@@ -297,8 +297,10 @@ export function applyAction(
       const round = state.round + 1
       // Escalation (and the tech era) rises with the richest player's wealth, so
       // events grow as the game progresses. Deterministic per (room, round).
+      // `action.event` lets the host supply a specific event (used by tests, and
+      // available for future scripted events); only the host can, as ever.
       const scale = playerCount(state) + Math.floor(richestWealth(state) / 6)
-      const event = generateEvent(scale, `${state.roomCode}:event:${round}`)
+      const event = action.event ?? generateEvent(scale, `${state.roomCode}:event:${round}`)
       const revealed: GameState = {
         ...state,
         round,
