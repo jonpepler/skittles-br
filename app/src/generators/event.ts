@@ -93,6 +93,17 @@ function emptySet(): SkittleSet {
   return { red: 0, orange: 0, yellow: 0, purple: 0, green: 0 }
 }
 
+/** Pick `n` distinct colours at random (partial Fisher–Yates). */
+function pickColours(rng: Rng, n: number): SkittleColour[] {
+  const pool = [...SKITTLE_COLOURS]
+  const count = Math.min(n, pool.length)
+  for (let i = 0; i < count; i++) {
+    const j = i + rng.int(pool.length - i)
+    ;[pool[i], pool[j]] = [pool[j]!, pool[i]!]
+  }
+  return pool.slice(0, count)
+}
+
 function describe(kind: EventKind, fail: EventFail, name: string): string {
   if (kind === 'opportunity') {
     return `${name} is within reach. Invest to leap ahead, or save your skittles and fall behind.`
@@ -113,25 +124,29 @@ export function generateEvent(scale = 1, seed?: number | string): GameEvent {
   const era = ERAS[Math.min(ERAS.length - 1, Math.max(0, Math.floor(scale / 4)))]!
 
   const kind: EventKind = rng.bool(0.55) ? 'threat' : 'opportunity'
+  // A grace period: until the world has escalated past `scale` 4, threats only
+  // *penalise* — you can't be eliminated by an early unlucky hand. After that,
+  // failing a threat is a coin-flip between elimination and a penalty.
   const fail: EventFail =
-    kind === 'opportunity' ? 'none' : rng.bool(0.5) ? 'eliminate' : 'penalty'
+    kind === 'opportunity' ? 'none' : scale >= 4 && rng.bool(0.5) ? 'eliminate' : 'penalty'
   const name = rng.pick(kind === 'threat' ? era.threats : era.opportunities)
 
-  // 15 draws: five colours each for requirement, reward and penalty.
-  const x = Array.from({ length: 15 }, () => rng.next())
-  const fill = (offset: number, factor: number): SkittleSet => {
+  // Events target a *few* colours, not all five (the source asked for "2 red
+  // defence" or "X green food", never one of everything), so a focused holding
+  // can meet them. Each chosen colour gets at least one.
+  const fill = (factor: number, count: number): SkittleSet => {
     const set = emptySet()
-    SKITTLE_COLOURS.forEach((colour, i) => {
-      set[colour] = Math.trunc(S(x[offset + i]!, scale) * factor)
-    })
+    for (const colour of pickColours(rng, count)) {
+      set[colour] = Math.max(1, Math.trunc(S(rng.next(), scale) * factor))
+    }
     return set
   }
 
   // Opportunities ask a modest investment for a strong reward; threats gate
   // harder and pay smaller spoils.
-  const requirement = fill(0, kind === 'opportunity' ? 0.6 : 1)
-  const reward = fill(5, kind === 'opportunity' ? 1 : 0.4)
-  const penalty = fail === 'penalty' ? fill(10, 0.7) : emptySet()
+  const requirement = fill(kind === 'opportunity' ? 0.6 : 1, rng.range(1, 2))
+  const reward = fill(kind === 'opportunity' ? 1 : 0.4, rng.range(1, 2))
+  const penalty = fail === 'penalty' ? fill(0.7, rng.range(1, 2)) : emptySet()
 
   return { name, description: describe(kind, fail, name), kind, fail, requirement, reward, penalty }
 }

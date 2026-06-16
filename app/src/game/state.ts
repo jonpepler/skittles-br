@@ -328,11 +328,12 @@ export function applyAction(
       if (senderId !== state.hostId) return state
       if (state.phase !== 'active') return state
       const round = state.round + 1
-      // Escalation (and the tech era) rises with the richest player's wealth, so
-      // events grow as the game progresses. Deterministic per (room, round).
-      // `action.event` lets the host supply a specific event (used by tests, and
-      // available for future scripted events); only the host can, as ever.
-      const scale = playerCount(state) + Math.floor(richestWealth(state) / 6)
+      // Difficulty (and the tech era) ramps gently with the round, not with
+      // wealth — surviving, not hoarding, is the goal, so being rich shouldn't
+      // make the world harder. (ADR 0001: a tech-frontier/median signal will
+      // drive this once tech exists.) Deterministic per (room, round); the host
+      // may also supply a specific event for tests/scripting.
+      const scale = 2 + Math.floor((round - 1) / 2)
       const event = action.event ?? generateEvent(scale, `${state.roomCode}:event:${round}`)
       // Each living nation draws an unequal allotment this round (the recurring
       // "resource schedule"). This is the primary income now that there's no

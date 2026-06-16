@@ -4,7 +4,7 @@ import { resolve } from 'node:path'
 import { ARCHETYPES } from './bots.js'
 import { formatReport, runSuite, type GameConfig } from './harness.js'
 
-const CFG: GameConfig = { players: 5, rounds: 12, policies: ARCHETYPES }
+const CFG: GameConfig = { players: 5, rounds: 20, policies: ARCHETYPES }
 const SEEDS = Array.from({ length: 40 }, (_, i) => `sim-${i}`)
 
 describe('simulation harness', () => {
