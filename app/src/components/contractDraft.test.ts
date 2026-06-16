@@ -41,6 +41,7 @@ describe('contractToClauses', () => {
       onReceive: buckets.onReceive,
       onEliminate: buckets.onEliminate,
       expiresRound: null,
+      unpaid: false,
       signFired: false
     }
     const back = contractToClauses(contract)

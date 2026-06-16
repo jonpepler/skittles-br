@@ -857,6 +857,10 @@ input.chip {
   gap: 0.5rem;
   margin-top: 0.6rem;
 }
+.contracts__unpaid {
+  font-weight: 800;
+  color: var(--red);
+}
 
 /* ── Merged summary: a sticky note ───────────────────────────────── */
 .summary {

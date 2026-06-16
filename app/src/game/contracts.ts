@@ -49,6 +49,9 @@ export type Contract = {
   expiresRound: number | null
   /** Whether the onSign clause has already fired. */
   signFired: boolean
+  /** True when the last recurring payment couldn't be afforded and was skipped.
+   *  No automatic penalty: the owed party decides whether to void the contract. */
+  unpaid: boolean
 }
 
 export interface EvalContext {
@@ -132,14 +135,27 @@ export function fireOnSign(state: GameState, contract: Contract): GameState {
   return applyTransfers(state, contract.onSign, state.event) ?? state
 }
 
-/** Fire every fully-signed contract's onEvent clause for a freshly revealed event. */
+/**
+ * Fire every fully-signed contract's onEvent clause for a freshly revealed
+ * event. A clause the giver can't afford is skipped (no penalty) and the
+ * contract is flagged `unpaid` so the owed party can decide to void it.
+ */
 export function fireOnEvent(state: GameState, event: GameEvent): GameState {
   let next = state
+  const flags = new Map<string, boolean>()
   for (const contract of state.contracts) {
     if (!allSigned(contract) || contract.onEvent.length === 0) continue
-    next = applyTransfers(next, contract.onEvent, event) ?? next
+    const applied = applyTransfers(next, contract.onEvent, event)
+    flags.set(contract.id, applied === null)
+    if (applied) next = applied
   }
-  return next
+  if (flags.size === 0) return next
+  return {
+    ...next,
+    contracts: next.contracts.map((c) =>
+      flags.has(c.id) ? { ...c, unpaid: flags.get(c.id)! } : c
+    )
+  }
 }
 
 /** Positive per-player skittle gains between two states (after − before). */

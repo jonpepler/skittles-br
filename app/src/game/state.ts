@@ -356,7 +356,8 @@ export function applyAction(
         onReceive: action.onReceive,
         onEliminate: action.onEliminate,
         expiresRound: action.expiresRound,
-        signFired: false
+        signFired: false,
+        unpaid: false
       }
       return {
         ...state,
@@ -423,7 +424,8 @@ export function applyAction(
         onReceive: action.onReceive,
         onEliminate: action.onEliminate,
         expiresRound: action.expiresRound,
-        signed: [senderId]
+        signed: [senderId],
+        unpaid: false
       }
       return { ...state, contracts: state.contracts.map((x, i) => (i === idx ? revised : x)) }
     }

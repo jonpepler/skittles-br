@@ -408,3 +408,30 @@ describe('contracts — onEliminate', () => {
     expect(resolved.players['b']!.skittles!.red).toBe(7)
   })
 })
+
+describe('contracts — unpaid recurring clause', () => {
+  it('flags the contract instead of penalising when a payment is unaffordable', () => {
+    let game = activeWith('a', 'b')
+    // a promises to cover b's required red each event, but holds none.
+    game = applyAction(game, 'a', {
+      type: 'proposeContract',
+      parties: ['a', 'b'],
+      onSign: [],
+      onEvent: [{ from: 'a', to: 'b', give: { red: { eventReq: 'red' } } }],
+      onReceive: [],
+      onEliminate: [],
+      expiresRound: null
+    })
+    const id = game.contracts[0]!.id
+    game = applyAction(game, 'b', { type: 'signContract', contractId: id })
+
+    game = applyAction(game, 'a', { type: 'triggerEvent' }, 1000)
+    const contract = game.contracts.find((c) => c.id === id)!
+    expect(contract.unpaid).toBe(true) // a couldn't pay; flagged, not punished
+    expect(game.players['a']!.out).toBe(false) // no automatic penalty
+
+    // The owed party (b) decides to void it.
+    const voided = applyAction(game, 'b', { type: 'cancelContract', contractId: id })
+    expect(voided.contracts).toHaveLength(0)
+  })
+})

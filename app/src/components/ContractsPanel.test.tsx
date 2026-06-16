@@ -74,6 +74,7 @@ describe('ContractsPanel command editor', () => {
       onReceive: [],
       onEliminate: [],
       expiresRound: null,
+      unpaid: false,
       signFired: false
     }
     renderPanel({ contracts: [contract], onSign })
@@ -98,6 +99,7 @@ describe('ContractsPanel command editor', () => {
       onReceive: [],
       onEliminate: [],
       expiresRound: null,
+      unpaid: false,
       signFired: false
     }
     renderPanel({ contracts: [contract], onRevise })

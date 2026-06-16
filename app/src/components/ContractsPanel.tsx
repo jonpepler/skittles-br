@@ -89,6 +89,7 @@ export function ContractsPanel({
                       {c.signed.length}/{c.parties.length} signed
                       {mine ? ', incl. you' : ''}
                     </span>
+                    {c.unpaid && <span className="contracts__unpaid">⚠ payment missed</span>}
                   </div>
                   <ContractSummary
                     buckets={{
@@ -117,17 +118,26 @@ export function ContractsPanel({
                     />
                   ) : (
                     <div className="contracts__item-actions">
-                      {!mine && (
-                        <button className="btn" onClick={() => onSign(c.id)}>
-                          Sign
+                      {c.signFired ? (
+                        // A live contract can't be renegotiated, only voided.
+                        <button className="btn" onClick={() => onCancel(c.id)}>
+                          Void contract
                         </button>
+                      ) : (
+                        <>
+                          {!mine && (
+                            <button className="btn" onClick={() => onSign(c.id)}>
+                              Sign
+                            </button>
+                          )}
+                          <button className="btn" onClick={() => setCountering(c.id)}>
+                            Counter
+                          </button>
+                          <button className="btn" onClick={() => onCancel(c.id)}>
+                            Decline
+                          </button>
+                        </>
                       )}
-                      <button className="btn" onClick={() => setCountering(c.id)}>
-                        Counter
-                      </button>
-                      <button className="btn" onClick={() => onCancel(c.id)}>
-                        Decline
-                      </button>
                     </div>
                   )}
                 </div>
