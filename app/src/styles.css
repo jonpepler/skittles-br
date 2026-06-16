@@ -929,3 +929,110 @@ input.chip {
 .dot.skittle--green {
   background: var(--green);
 }
+
+/* ── Mobile: keep the scrappy-paper look, just make it fit a phone ──── */
+@media (max-width: 640px) {
+  /* Reclaim horizontal room from the page gutter. */
+  #root {
+    padding: 0.85rem;
+  }
+
+  /* Nothing should push the page wider than the screen. */
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Header wraps instead of squashing the room code into the phase badge. */
+  .game__header {
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+  }
+
+  /* The big title can be too wide for narrow phones; scale it down. */
+  .landing {
+    padding-top: 2.5rem;
+  }
+  .landing__title {
+    font-size: 3rem;
+  }
+  .landing__join {
+    flex-wrap: wrap;
+  }
+  .landing__input {
+    flex: 1 1 8rem;
+    min-width: 0;
+  }
+
+  /* Share link must not blow out the row: let the field shrink. */
+  .share__link {
+    max-width: none;
+  }
+  .share__url {
+    min-width: 0;
+  }
+  .qr {
+    width: 150px;
+    height: 150px;
+  }
+
+  /* Game-length presets: let the segmented control fill the width. */
+  .seg {
+    flex: 1 1 100%;
+  }
+  .seg__btn {
+    flex: 1;
+    padding: 0.3rem 0.4rem;
+  }
+
+  /* Trade amounts overflowed off-screen (5 inputs in one fixed row). Wrap
+     them and give each colour input a comfortable tap size. */
+  .trade__amounts {
+    flex-wrap: wrap;
+    gap: 0.4rem 0.6rem;
+  }
+  .trade__amounts-label {
+    flex: 1 1 100%;
+  }
+  .trade__amount input {
+    width: 2.6rem;
+    height: 2.4rem;
+  }
+  .trade__form select {
+    max-width: 100%;
+  }
+
+  /* Stack each offer's description above its accept/decline buttons. */
+  .trade__offer {
+    flex-wrap: wrap;
+  }
+
+  /* Faction selects sized to their longest option name, overflowing the
+     viewport. Cap them and ellipsize the chosen name. */
+  .fselect {
+    max-width: 100%;
+    min-width: 0;
+  }
+  .fselect select {
+    min-width: 0;
+    max-width: 100%;
+    text-overflow: ellipsis;
+  }
+
+  /* Give the contract clause "lines" the full width so chips have room to
+     wrap rather than spilling past the card edge. */
+  .clause select.chip,
+  .clause .fselect {
+    flex: 1 1 auto;
+  }
+
+  /* Slightly larger colour dots — easier to tap inside the picker. */
+  .cpick__dot {
+    width: 1.4rem;
+    height: 1.4rem;
+  }
+
+  /* Footer actions stack so the primary button gets a full-width hit area. */
+  .contracts__actions .btn--large {
+    flex: 1 1 100%;
+  }
+}
