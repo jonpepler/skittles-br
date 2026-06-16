@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useGameRoom } from '../hooks/useGameRoom.js'
 import type { Role } from '../game/types.js'
 import { MIN_PLAYERS } from '../game/state.js'
@@ -8,6 +9,53 @@ import { EventPanel } from './EventPanel.js'
 import { ShareInvite } from './ShareInvite.js'
 import { TradePanel } from './TradePanel.js'
 import { ContractsPanel } from './ContractsPanel.js'
+
+const LENGTHS = [
+  ['Short', 20],
+  ['Normal', 40],
+  ['Long', 60]
+] as const
+
+/** Game-length presets with a custom escape hatch. */
+function GameLength({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+  const [custom, setCustom] = useState(!LENGTHS.some(([, n]) => n === value))
+  return (
+    <div className="game__setting length">
+      <span className="length__label">Game length</span>
+      <div className="seg" role="group" aria-label="Game length">
+        {LENGTHS.map(([label, n]) => (
+          <button
+            key={n}
+            type="button"
+            className={`seg__btn${!custom && value === n ? ' seg__btn--on' : ''}`}
+            onClick={() => {
+              setCustom(false)
+              onChange(n)
+            }}
+          >
+            {label}
+            <span className="seg__n">{n}</span>
+          </button>
+        ))}
+      </div>
+      <label className="length__custom">
+        <input type="checkbox" checked={custom} onChange={(e) => setCustom(e.target.checked)} />{' '}
+        Custom
+      </label>
+      {custom && (
+        <input
+          className="game__rounds"
+          type="number"
+          min={1}
+          max={200}
+          aria-label="Custom rounds"
+          value={value}
+          onChange={(e) => onChange(Math.max(1, Math.min(200, Number(e.target.value) || 1)))}
+        />
+      )}
+    </div>
+  )
+}
 
 export function GameScreen({
   roomCode,
@@ -65,17 +113,8 @@ export function GameScreen({
                   onChange={(e) => game.setEventDuration(Number(e.target.value))}
                 />
               </label>
-              <label className="game__setting">
-                Rounds (everyone alive at the end wins):{' '}
-                <input
-                  className="game__rounds"
-                  type="number"
-                  min={1}
-                  max={20}
-                  value={state.maxRounds}
-                  onChange={(e) => game.setRounds(Number(e.target.value))}
-                />
-              </label>
+              <GameLength value={state.maxRounds} onChange={game.setRounds} />
+              <p className="game__hint">Everyone still alive at the end wins.</p>
               <button
                 className="btn btn--large"
                 disabled={!game.canStart}

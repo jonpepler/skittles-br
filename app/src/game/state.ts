@@ -37,8 +37,8 @@ export const MIN_PLAYERS = 2
 /** Default reveal→resolve window for events, in seconds. */
 export const DEFAULT_EVENT_DURATION = 30
 
-/** Default number of events a game runs for. */
-export const DEFAULT_ROUNDS = 5
+/** Default number of events a game runs for ("Normal"). */
+export const DEFAULT_ROUNDS = 40
 
 /** Deterministic seed for a player's flag and civ name. */
 export function playerSeed(roomCode: string, id: string): string {
@@ -259,7 +259,7 @@ export function applyAction(
     case 'setRounds': {
       if (senderId !== state.hostId) return state
       const rounds = Math.round(action.rounds)
-      if (!Number.isFinite(rounds) || rounds < 1 || rounds > 20) return state
+      if (!Number.isFinite(rounds) || rounds < 1 || rounds > 200) return state
       return { ...state, maxRounds: rounds }
     }
     case 'setVisibility': {
