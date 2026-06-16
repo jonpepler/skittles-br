@@ -1,28 +1,34 @@
 import { SKITTLE_COLOURS, type SkittleColour } from '../generators/event.js'
 
-/** A single compact, colour-tinted dropdown for choosing a skittle colour.
- *  One control instead of a row of dots, to keep clause-building uncluttered. */
+/** A row of skittle dots for choosing one or more colours. Selected dots are
+ *  lit; at least one stays selected. */
 export function ColourPicker({
   label,
-  value,
+  values,
   onChange
 }: {
   label: string
-  value: SkittleColour
-  onChange: (c: SkittleColour) => void
+  values: SkittleColour[]
+  onChange: (c: SkittleColour[]) => void
 }) {
+  const toggle = (c: SkittleColour): void => {
+    const on = values.includes(c)
+    if (on && values.length === 1) return // keep at least one
+    onChange(on ? values.filter((x) => x !== c) : SKITTLE_COLOURS.filter((x) => x === c || values.includes(x)))
+  }
   return (
-    <select
-      className={`chip cpick-select skittle--${value}`}
-      aria-label={label}
-      value={value}
-      onChange={(e) => onChange(e.target.value as SkittleColour)}
-    >
+    <span className="cpick" role="group" aria-label={label}>
       {SKITTLE_COLOURS.map((c) => (
-        <option key={c} value={c}>
-          {c}
-        </option>
+        <button
+          key={c}
+          type="button"
+          title={c}
+          aria-label={`${label} ${c}`}
+          aria-pressed={values.includes(c)}
+          className={`cpick__dot skittle--${c}${values.includes(c) ? ' cpick__dot--on' : ''}`}
+          onClick={() => toggle(c)}
+        />
       ))}
-    </select>
+    </span>
   )
 }

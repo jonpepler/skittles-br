@@ -72,11 +72,12 @@ test.describe('mobile responsiveness', () => {
     await host.locator('.trade').screenshot({ path: 'e2e/screenshots/mobile-trade.png' })
 
     // The chip-heavy contract editor under a rich, nested statement.
-    await host.getByLabel('amount', { exact: true }).fill('3')
-    await host.getByLabel('Colour', { exact: true }).selectOption('green')
     await host.getByLabel('When').selectOption('receive')
-    await host.getByLabel('Received colour').selectOption('red')
-    await host.getByLabel('amount kind').selectOption('min')
+    await host.getByLabel('amount kind').selectOption('percent')
+    await host.getByLabel('amount percent').fill('50')
+    await host.getByLabel('amount limit').selectOption('cap')
+    await host.getByLabel('amount limit amount').fill('5')
+    await host.getByLabel('Colours green').click()
     await host.getByRole('button', { name: '+ party' }).click()
     await host.getByRole('button', { name: '+ Add clause' }).click()
     await host.locator('.contracts').screenshot({

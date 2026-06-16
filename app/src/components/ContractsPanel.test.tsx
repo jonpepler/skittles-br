@@ -38,7 +38,9 @@ describe('ContractsPanel command editor', () => {
     renderPanel({ onPropose })
     await userEvent.clear(screen.getByLabelText('amount', { exact: true }))
     await userEvent.type(screen.getByLabelText('amount', { exact: true }), '3')
-    await userEvent.selectOptions(screen.getByLabelText('Colour', { exact: true }), 'green')
+    // Switch the single colour from the default red to green.
+    await userEvent.click(screen.getByLabelText('Colours green'))
+    await userEvent.click(screen.getByLabelText('Colours red'))
     await userEvent.click(screen.getByRole('button', { name: 'Propose contract' }))
 
     const [parties, onSign, onEvent, onReceive] = onPropose.mock.calls[0]!

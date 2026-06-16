@@ -54,9 +54,9 @@ function amountTokens(
   subjective: string
 ): PhraseToken[] {
   if (typeof expr === 'number') {
-    // Plurality: "1 red" but "2 reds". The colour token carries the colour
-    // (rendered as a dot in the UI); the plural "s" trails as text.
-    return [text(`${expr} `), colour(colourCtx), ...(expr === 1 ? [] : [text('s')])]
+    // Colour is a mass noun here ("3 red", not "3 reds"); the colour token
+    // renders as a dot in the UI, so a trailing plural "s" would dangle.
+    return [text(`${expr} `), colour(colourCtx)]
   }
   if ('all' in expr) {
     return [text(`all ${possessive} `), colour(expr.all)]
@@ -72,11 +72,19 @@ function amountTokens(
   }
   if ('min' in expr) {
     const parts = expr.min.map((e) => amountTokens(e, colourCtx, possessive, subjective))
-    const lead = parts.length === 2 ? 'the smaller of ' : 'the smallest of '
-    return [text(lead), ...joinList(parts)]
+    // A binary min is a cap: "A, but at most B". More than two falls back to a
+    // plain "the smallest of A, B and C".
+    if (parts.length === 2) return [...parts[0]!, text(', but at most '), ...parts[1]!]
+    return [text('the smallest of '), ...joinList(parts)]
   }
+  // A sum reads as "A plus B (plus C)".
   const parts = expr.sum.map((e) => amountTokens(e, colourCtx, possessive, subjective))
-  return joinList(parts)
+  const out: PhraseToken[] = []
+  parts.forEach((part, i) => {
+    if (i > 0) out.push(text(' plus '))
+    out.push(...part)
+  })
+  return out
 }
 
 /** True if this amount is literally zero (and so contributes nothing). */

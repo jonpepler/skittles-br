@@ -27,26 +27,25 @@ test.describe('contract/trade UI', () => {
     const contracts = host.locator('.contracts')
     const shot = (name: string) => contracts.screenshot({ path: `e2e/screenshots/${name}.png` })
 
-    // 1. Default clause → a one-shot gift.
+    // 1. Default clause → a one-shot gift of two colours.
     await host.getByLabel('amount', { exact: true }).fill('3')
-    await host.getByLabel('Colour', { exact: true }).selectOption('green')
+    await host.getByLabel('Colours green').click()
     await shot('contract-1-gift')
 
     // 2. Recurring: cover the event's required colour each event.
     await host.getByLabel('When').selectOption('event')
     await host.getByLabel('amount kind').selectOption('eventReq')
-    await host.getByLabel('amount colour', { exact: true }).selectOption('red')
     await shot('contract-2-eventcover')
 
     // 3. Reactive: each time I receive red, give 50% of it.
     await host.getByLabel('When').selectOption('receive')
-    await host.getByLabel('Received colour').selectOption('red')
     await host.getByLabel('amount kind').selectOption('percent')
     await host.getByLabel('amount percent').fill('50')
     await shot('contract-3-receive-percent')
 
-    // 4. Nested amount: smallest of (50% of received, a fixed number).
-    await host.getByLabel('amount kind').selectOption('min')
+    // 4. Capped: a percentage, but at most a fixed number.
+    await host.getByLabel('amount limit').selectOption('cap')
+    await host.getByLabel('amount limit amount').fill('5')
     await shot('contract-4-nested')
 
     // 5. Add a third party and a second clause.

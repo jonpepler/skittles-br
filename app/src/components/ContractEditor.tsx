@@ -137,13 +137,6 @@ export function ContractEditor({
               <option value="eliminate">If… is eliminated</option>
               <option value="default">If… can't pay</option>
             </select>
-            {c.trigger === 'receive' && (
-              <ColourPicker
-                label="Received colour"
-                value={c.receiveColour}
-                onChange={(col) => patch(c.key, { receiveColour: col })}
-              />
-            )}
             <span className="clause__deal">
               <FactionSelect
                 label="Giver"
@@ -159,15 +152,12 @@ export function ContractEditor({
                 onChange={(v) => patch(c.key, { to: v })}
               />
             </span>
-            <AmountChip
-              value={c.amount}
-              defaultColour={c.colour}
-              onChange={(amount) => patch(c.key, { amount })}
-            />
+            <AmountChip value={c.amount} onChange={(amount) => patch(c.key, { amount })} />
+            <span className="amt__kw">of</span>
             <ColourPicker
-              label="Colour"
-              value={c.colour}
-              onChange={(col) => patch(c.key, { colour: col })}
+              label="Colours"
+              values={c.colours}
+              onChange={(cols) => patch(c.key, { colours: cols })}
             />
           </div>
         </div>

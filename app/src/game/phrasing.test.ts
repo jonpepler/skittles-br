@@ -16,25 +16,25 @@ describe('phraseStatement — triggers', () => {
 
   it('on signing, third party', () => {
     expect(phrase({ trigger: 'onSign', from: 'alice', to: 'bob', give }, 'me')).toBe(
-      'On signing, Alice gives Bob 2 reds.'
+      'On signing, Alice gives Bob 2 red.'
     )
   })
 
   it('on signing, viewer is giver', () => {
     expect(phrase({ trigger: 'onSign', from: 'me', to: 'bob', give })).toBe(
-      'On signing, you give Bob 2 reds.'
+      'On signing, you give Bob 2 red.'
     )
   })
 
   it('on signing, viewer is recipient', () => {
     expect(phrase({ trigger: 'onSign', from: 'alice', to: 'me', give })).toBe(
-      'On signing, Alice gives you 2 reds.'
+      'On signing, Alice gives you 2 red.'
     )
   })
 
   it('each event', () => {
     expect(phrase({ trigger: 'onEvent', from: 'alice', to: 'bob', give }, 'me')).toBe(
-      'Each event, Alice gives Bob 2 reds.'
+      'Each event, Alice gives Bob 2 red.'
     )
   })
 
@@ -54,19 +54,19 @@ describe('phraseStatement — triggers', () => {
 
   it('onEliminate, third party', () => {
     expect(phrase({ trigger: 'onEliminate', from: 'alice', to: 'bob', give }, 'me')).toBe(
-      'If Alice is eliminated, Alice gives Bob 2 reds.'
+      'If Alice is eliminated, Alice gives Bob 2 red.'
     )
   })
 
   it('onEliminate, viewer is giver (are vs is)', () => {
     expect(phrase({ trigger: 'onEliminate', from: 'me', to: 'bob', give })).toBe(
-      'If you are eliminated, you give Bob 2 reds.'
+      'If you are eliminated, you give Bob 2 red.'
     )
   })
 
   it('onDefault', () => {
     expect(phrase({ trigger: 'onDefault', from: 'alice', to: 'bob', give }, 'me')).toBe(
-      "If Alice can't pay, Alice gives Bob 2 reds."
+      "If Alice can't pay, Alice gives Bob 2 red."
     )
   })
 })
@@ -76,7 +76,7 @@ describe('phraseStatement — amounts', () => {
 
   it('singular vs plural', () => {
     expect(phrase({ ...base, give: { red: 1 } }, 'me')).toBe('On signing, Alice gives Bob 1 red.')
-    expect(phrase({ ...base, give: { red: 5 } }, 'me')).toBe('On signing, Alice gives Bob 5 reds.')
+    expect(phrase({ ...base, give: { red: 5 } }, 'me')).toBe('On signing, Alice gives Bob 5 red.')
   })
 
   it('zero reads as nothing', () => {
@@ -118,10 +118,10 @@ describe('phraseStatement — amounts', () => {
     )
   })
 
-  it('min of two: "the smaller of A and B"', () => {
+  it('min of two reads as a cap: "A, but at most B"', () => {
     const g: GiveSpec = { red: { min: [{ all: 'red' }, 1] } }
     expect(phrase({ ...base, give: g }, 'me')).toBe(
-      'On signing, Alice gives Bob the smaller of all their red and 1 red.'
+      'On signing, Alice gives Bob all their red, but at most 1 red.'
     )
   })
 
@@ -132,23 +132,23 @@ describe('phraseStatement — amounts', () => {
     )
   })
 
-  it('nested sum reads as a list', () => {
+  it('nested sum reads with plus', () => {
     const g: GiveSpec = { red: { sum: [1, { all: 'red' }] } }
     expect(phrase({ ...base, give: g }, 'me')).toBe(
-      'On signing, Alice gives Bob 1 red and all their red.'
+      'On signing, Alice gives Bob 1 red plus all their red.'
     )
   })
 
   it('several colours: comma list with final and', () => {
     const g: GiveSpec = { red: 1, orange: 2, green: 3 }
     expect(phrase({ ...base, give: g }, 'me')).toBe(
-      'On signing, Alice gives Bob 1 red, 2 oranges and 3 greens.'
+      'On signing, Alice gives Bob 1 red, 2 orange and 3 green.'
     )
   })
 
   it('zero colour is dropped from a multi-colour list', () => {
     const g: GiveSpec = { red: 0, orange: 2 }
-    expect(phrase({ ...base, give: g }, 'me')).toBe('On signing, Alice gives Bob 2 oranges.')
+    expect(phrase({ ...base, give: g }, 'me')).toBe('On signing, Alice gives Bob 2 orange.')
   })
 })
 
@@ -225,8 +225,13 @@ function detectAwkward(sentence: string, tokens: PhraseToken[]): string[] {
   // Subject/verb: "you receives", "you gives", "they give " (3rd person plural) etc.
   if (/\byou (receives|gives|is)\b/.test(sentence)) issues.push('you + 3rd-person verb')
   if (/\bAlice (receive|give|are)\b/.test(sentence)) issues.push('name + bare verb')
-  // Comma list immediately followed by a word without "and" (best-effort).
-  if (/, \w[\w% ]*, \w[\w% ]*\./.test(sentence) && !/ and /.test(sentence)) {
+  // Comma list immediately followed by a word without "and" (best-effort). The
+  // "A, but at most B" cap is not a list, so it's exempt.
+  if (
+    /, \w[\w% ]*, \w[\w% ]*\./.test(sentence) &&
+    !/ and /.test(sentence) &&
+    !/but at most/.test(sentence)
+  ) {
     issues.push('comma list missing "and"')
   }
   // Double spaces / space before punctuation.

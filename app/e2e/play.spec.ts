@@ -64,9 +64,8 @@ test.describe('cross-peer gameplay', () => {
     // Host stocks up so it can honour the contract.
     await collect(host, 'red', 3)
 
-    // Host proposes: "when signed, I give you 2 red".
+    // Host proposes: "when signed, I give you 2 red" (red is the default colour).
     await host.getByLabel('amount', { exact: true }).fill('2')
-    await host.getByLabel('Colour', { exact: true }).selectOption('red')
     await host.getByRole('button', { name: 'Propose contract' }).click()
 
     // Guest counters it down to 1 red.

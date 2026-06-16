@@ -729,26 +729,45 @@ input.chip {
   padding: 0 0.6rem;
   font-weight: 800;
 }
-.cpick-select {
-  text-transform: capitalize;
+.cpick {
+  box-sizing: border-box;
+  height: var(--chip-h);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
 }
-.cpick-select.skittle--red {
-  background-color: var(--red);
+.cpick__dot {
+  width: 1.4rem;
+  height: 1.4rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.4;
+  transition: opacity 0.1s, transform 0.1s;
 }
-.cpick-select.skittle--orange {
-  background-color: var(--orange);
+.cpick__dot:hover {
+  opacity: 0.8;
 }
-.cpick-select.skittle--yellow {
-  background-color: var(--yellow);
+.cpick__dot--on {
+  opacity: 1;
+  transform: scale(1.2) rotate(-6deg);
 }
-.cpick-select.skittle--purple {
-  background-color: var(--purple);
+.cpick__dot.skittle--red {
+  background: var(--red);
 }
-.cpick-select.skittle--green {
-  background-color: var(--green);
+.cpick__dot.skittle--orange {
+  background: var(--orange);
 }
-.cpick-select:hover {
-  filter: brightness(1.05);
+.cpick__dot.skittle--yellow {
+  background: var(--yellow);
+}
+.cpick__dot.skittle--purple {
+  background: var(--purple);
+}
+.cpick__dot.skittle--green {
+  background: var(--green);
 }
 
 /* keywords + nested amount groups */
