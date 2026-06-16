@@ -144,19 +144,21 @@ export function ContractEditor({
                 onChange={(col) => patch(c.key, { receiveColour: col })}
               />
             )}
-            <FactionSelect
-              label="Giver"
-              value={c.from}
-              options={partyOptions}
-              onChange={(v) => patch(c.key, { from: v })}
-            />
-            <span className="amt__kw">gives</span>
-            <FactionSelect
-              label="Recipient"
-              value={c.to}
-              options={partyOptions}
-              onChange={(v) => patch(c.key, { to: v })}
-            />
+            <span className="clause__deal">
+              <FactionSelect
+                label="Giver"
+                value={c.from}
+                options={partyOptions}
+                onChange={(v) => patch(c.key, { from: v })}
+              />
+              <span className="amt__kw">gives</span>
+              <FactionSelect
+                label="Recipient"
+                value={c.to}
+                options={partyOptions}
+                onChange={(v) => patch(c.key, { to: v })}
+              />
+            </span>
             <AmountChip
               value={c.amount}
               defaultColour={c.colour}

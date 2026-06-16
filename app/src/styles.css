@@ -667,6 +667,12 @@ h3 {
   gap: 0.4rem 0.45rem;
   padding-right: 1.2rem;
 }
+.clause__deal {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.45rem;
+}
 
 /* ── Chips: every control shares one height ──────────────────────── */
 .chip {
@@ -1037,15 +1043,55 @@ input.chip {
   }
   .fselect select {
     min-width: 0;
-    max-width: 100%;
+    width: 100%;
+    overflow: hidden;
     text-overflow: ellipsis;
   }
+  /* Party tags truncate too, so a long faction name can't widen the row. */
+  .editor__party {
+    min-width: 0;
+    max-width: 100%;
+  }
 
-  /* Give the contract clause "lines" the full width so chips have room to
-     wrap rather than spilling past the card edge. */
+  /* Compact the contract editor: tighter cards, and chips that size to their
+     content and wrap, instead of one full-width chip per line (which made each
+     clause very tall). The "X gives Y" deal sits on its own line. */
+  .editor {
+    padding: 0.7rem 0.7rem 0.85rem;
+  }
+  .clause-card {
+    padding: 0.55rem 0.6rem;
+    margin-bottom: 0.5rem;
+  }
+  .clause {
+    gap: 0.3rem 0.4rem;
+  }
   .clause select.chip,
   .clause .fselect {
-    flex: 1 1 auto;
+    flex: 0 1 auto;
+    max-width: 100%;
+  }
+  .clause__deal {
+    flex: 1 1 100%;
+    gap: 0.3rem;
+  }
+  /* Giver and recipient share one line (names truncate; the flag identifies
+     them) so the deal reads as "A gives B" instead of three stacked rows. */
+  .clause__deal .fselect {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .clause__deal .amt__kw {
+    flex: 0 0 auto;
+  }
+  .amt__nest,
+  .amt__list {
+    padding: 0.1rem 0.3rem;
+  }
+  .editor__parties {
+    gap: 0.4rem;
+    padding-bottom: 0.6rem;
+    margin-bottom: 0.6rem;
   }
 
   /* Slightly larger colour dots — easier to tap inside the picker. */
