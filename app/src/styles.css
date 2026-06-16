@@ -1283,20 +1283,20 @@ input.chip {
 }
 .splash__side {
   display: grid;
-  /* Fill top-to-bottom, then wrap to a new column to the side. */
+  /* Fill top-to-bottom (3 to a column), then wrap to a new column. */
   grid-auto-flow: column;
-  grid-template-rows: repeat(4, auto);
-  gap: 0.45rem;
+  grid-template-rows: repeat(3, auto);
+  gap: 0.5rem;
   align-content: center;
 }
 .splash__side:empty {
   display: none;
 }
 .splash__opp-flag {
-  width: 1.7rem;
-  height: 1.13rem;
+  width: 2.5rem;
+  height: 1.67rem;
   border: 2px solid var(--ink);
-  border-radius: 4px;
+  border-radius: 5px;
   overflow: hidden;
 }
 .splash__self-flag svg,
