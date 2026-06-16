@@ -401,3 +401,48 @@ describe('event duration', () => {
     expect(triggered.eventEndsAt).toBe(1_000_000 + 20_000)
   })
 })
+
+describe('event log', () => {
+  const threat = (state: GameState, requirement: SkittleSet, reward: SkittleSet): GameState => ({
+    ...state,
+    event: { name: 'E', description: '', kind: 'threat', fail: 'eliminate', requirement, reward, penalty: emptySkittles() }
+  })
+
+  it('chronicles event pay/gain and eliminations', () => {
+    let game = activeWith('a', 'b')
+    game = giveSkittles(game, 'a', set({ red: 5 })) // b holds nothing → eliminated
+    game = threat(game, set({ red: 2 }), set({ green: 1 }))
+    const resolved = resolveEvent(game)
+    expect(resolved.log.find((e) => e.kind === 'event' && e.player === 'a')).toMatchObject({
+      paid: set({ red: 2 }),
+      gained: set({ green: 1 })
+    })
+    expect(resolved.log.some((e) => e.kind === 'eliminated' && e.player === 'b')).toBe(true)
+  })
+
+  it('logs both sides of an accepted trade', () => {
+    let game = activeWith('a', 'b')
+    game = giveSkittles(game, 'a', set({ red: 2 }))
+    game = giveSkittles(game, 'b', set({ green: 2 }))
+    game = applyAction(game, 'a', { type: 'proposeTrade', to: 'b', give: set({ red: 1 }), receive: set({ green: 1 }) })
+    const done = applyAction(game, 'b', { type: 'acceptTrade', offerId: game.offers[0]!.id })
+    const transfers = done.log.filter((e) => e.kind === 'transfer')
+    expect(transfers).toHaveLength(2)
+    expect(transfers).toContainEqual(expect.objectContaining({ from: 'a', to: 'b', skittles: set({ red: 1 }) }))
+    expect(transfers).toContainEqual(expect.objectContaining({ from: 'b', to: 'a', skittles: set({ green: 1 }) }))
+  })
+
+  it('redacts transfers/events to neighbours, but eliminations are public', () => {
+    let game = activeWith('a', 'b', 'c', 'd', 'e') // ring; a sees only a, b, e
+    game = giveSkittles(game, 'c', set({ red: 2 }))
+    game = giveSkittles(game, 'd', set({ green: 2 }))
+    game = applyAction(game, 'c', { type: 'proposeTrade', to: 'd', give: set({ red: 1 }), receive: set({ green: 1 }) })
+    game = applyAction(game, 'd', { type: 'acceptTrade', offerId: game.offers[0]!.id })
+
+    expect(redactStateFor(game, 'a').log.some((e) => e.kind === 'transfer')).toBe(false)
+    expect(redactStateFor(game, 'c').log.some((e) => e.kind === 'transfer')).toBe(true)
+
+    const resolved = resolveEvent(threat(game, set({ red: 99 }), emptySkittles()))
+    expect(redactStateFor(resolved, 'a').log.some((e) => e.kind === 'eliminated' && e.player === 'd')).toBe(true)
+  })
+})

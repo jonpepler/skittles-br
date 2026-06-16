@@ -9,6 +9,7 @@ import { EventPanel } from './EventPanel.js'
 import { ShareInvite } from './ShareInvite.js'
 import { TradePanel } from './TradePanel.js'
 import { ContractsPanel } from './ContractsPanel.js'
+import { GameLog } from './GameLog.js'
 
 const LENGTHS = [
   ['Short', 20],
@@ -215,6 +216,10 @@ export function GameScreen({
           <PlayerCard key={player.id} player={player} isSelf={player.id === selfId} />
         ))}
       </section>
+
+      {state && state.phase !== 'lobby' && (
+        <GameLog log={state.log} players={state.players} selfId={selfId} />
+      )}
     </div>
   )
 }

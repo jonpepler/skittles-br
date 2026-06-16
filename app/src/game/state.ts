@@ -25,9 +25,10 @@ import {
   fireOnEvent,
   fireOnSign,
   fireReceives,
-  type Contract
+  type Contract,
+  type Move
 } from './contracts.js'
-import type { GameAction, GameState, PlayerState, TradeOffer } from './types.js'
+import type { GameAction, GameState, LogBody, PlayerState, TradeOffer } from './types.js'
 
 // Re-export the skittle math so existing importers keep working.
 export { addSkittles, canAfford, emptySkittles, subSkittles } from './skittles.js'
@@ -40,6 +41,27 @@ export const DEFAULT_EVENT_DURATION = 30
 
 /** Default number of events a game runs for ("Normal"). */
 export const DEFAULT_ROUNDS = 40
+
+/** Keep the chronicle bounded so synced state can't grow without limit. */
+export const LOG_CAP = 500
+
+/** Stamp ids + the current round onto log bodies and append (capped). */
+function appendLog(state: GameState, bodies: LogBody[]): GameState {
+  if (bodies.length === 0) return state
+  let id = state.nextLogId
+  const entries = bodies.map((b) => ({ ...b, id: id++, round: state.round }))
+  const log = [...state.log, ...entries]
+  return {
+    ...state,
+    log: log.length > LOG_CAP ? log.slice(log.length - LOG_CAP) : log,
+    nextLogId: id
+  }
+}
+
+/** Turn concrete contract/trade movements into transfer log bodies. */
+function movesToLog(moves: Move[]): LogBody[] {
+  return moves.map((m) => ({ kind: 'transfer', from: m.from, to: m.to, skittles: m.skittles }))
+}
 
 /** Deterministic seed for a player's flag and civ name. */
 export function playerSeed(roomCode: string, id: string): string {
@@ -62,7 +84,9 @@ export function createGame(roomCode: string, hostId: string): GameState {
     offers: [],
     nextOfferId: 0,
     contracts: [],
-    nextContractId: 0
+    nextContractId: 0,
+    log: [],
+    nextLogId: 0
   }
 }
 
@@ -137,7 +161,14 @@ export function redactStateFor(state: GameState, viewerId: string): GameState {
   for (const [id, p] of Object.entries(state.players)) {
     players[id] = visible.has(id) ? p : { ...p, skittles: null }
   }
-  return { ...state, players, offers, contracts }
+  // Eliminations are public; pay/gain and transfers leak holdings, so they're
+  // shown only when the viewer can see a player they involve.
+  const log = state.log.filter((e) => {
+    if (e.kind === 'eliminated') return true
+    if (e.kind === 'event') return visible.has(e.player)
+    return visible.has(e.from) || visible.has(e.to)
+  })
+  return { ...state, players, offers, contracts, log }
 }
 
 /** Players still in the game (not eliminated). */
@@ -207,6 +238,7 @@ export function resolveEvent(state: GameState): GameState {
   // defaulters, handled per the event's failure mode below.
   const players: Record<string, PlayerState> = {}
   const defaulters: string[] = []
+  const bodies: LogBody[] = []
   for (const [id, p] of Object.entries(state.players)) {
     if (p.out || !isValidSet(p.skittles)) {
       players[id] = p
@@ -214,6 +246,7 @@ export function resolveEvent(state: GameState): GameState {
     }
     if (canAfford(p.skittles, requirement)) {
       players[id] = { ...p, skittles: addSkittles(subSkittles(p.skittles, requirement), reward) }
+      bodies.push({ kind: 'event', player: id, paid: requirement, gained: reward })
     } else {
       players[id] = p // unchanged for now; consequences applied below
       defaulters.push(id)
@@ -224,11 +257,13 @@ export function resolveEvent(state: GameState): GameState {
   for (const id of defaulters) {
     if (fail === 'none') continue // opportunity missed: no default, no harm
     // "If I can't pay" collateral fires first, then the threat's consequence.
-    resolved = fireOnDefault(resolved, id)
+    const moves: Move[] = []
+    resolved = fireOnDefault(resolved, id, moves)
     if (fail === 'eliminate') {
-      resolved = fireOnEliminate(resolved, id)
+      resolved = fireOnEliminate(resolved, id, moves)
       const p = resolved.players[id]
       if (p) resolved = { ...resolved, players: { ...resolved.players, [id]: { ...p, out: true } } }
+      bodies.push(...movesToLog(moves), { kind: 'eliminated', player: id })
     } else {
       const p = resolved.players[id]
       if (p?.skittles) {
@@ -237,8 +272,10 @@ export function resolveEvent(state: GameState): GameState {
           players: { ...resolved.players, [id]: { ...p, skittles: subSkittles(p.skittles, penalty) } }
         }
       }
+      bodies.push(...movesToLog(moves))
     }
   }
+  resolved = appendLog(resolved, bodies)
 
   // The game runs to a fixed number of events. Everyone still alive at the end
   // wins (it isn't last-one-standing). It also ends early if no one is left.
@@ -308,9 +345,11 @@ export function applyAction(
         eventEndsAt: now + state.eventDuration * 1000
       }
       // Fire recurring contract clauses against the new event, react to the
-      // resulting gains, then expire.
-      const fired = fireOnEvent(revealed, event)
-      return expireContracts(fireReceives(fired, diffGains(revealed, fired)))
+      // resulting gains, then expire — logging every skittle movement.
+      const moves: Move[] = []
+      const fired = fireOnEvent(revealed, event, moves)
+      const reacted = fireReceives(fired, diffGains(revealed, fired), 0, moves)
+      return expireContracts(appendLog(reacted, movesToLog(moves)))
     }
     case 'resolveEvent': {
       if (senderId !== state.hostId) return state
@@ -352,7 +391,16 @@ export function applyAction(
         addSkittles(subSkittles(to!.skittles!, offer.receive), offer.give)
       )
       const swapped = { ...next, offers: next.offers.filter((o) => o.id !== action.offerId) }
-      return fireReceives(swapped, diffGains(state, swapped))
+      const moves: Move[] = []
+      const reacted = fireReceives(swapped, diffGains(state, swapped), 0, moves)
+      const tradeBodies: LogBody[] = []
+      if (SKITTLE_COLOURS.some((c) => offer.give[c] > 0)) {
+        tradeBodies.push({ kind: 'transfer', from: offer.from, to: offer.to, skittles: offer.give })
+      }
+      if (SKITTLE_COLOURS.some((c) => offer.receive[c] > 0)) {
+        tradeBodies.push({ kind: 'transfer', from: offer.to, to: offer.from, skittles: offer.receive })
+      }
+      return appendLog(reacted, [...tradeBodies, ...movesToLog(moves)])
     }
     case 'cancelTrade': {
       const offer = state.offers.find((o) => o.id === action.offerId)
@@ -411,7 +459,8 @@ export function applyAction(
 
       // Everyone has signed: fire the one-shot clause, then mark it fired and
       // drop the contract if it has no recurring (onEvent) clause.
-      const fired = fireOnSign(withSign, signedContract)
+      const moves: Move[] = []
+      const fired = fireOnSign(withSign, signedContract, moves)
       const finalContract: Contract = { ...signedContract, signFired: true }
       const recurring =
         finalContract.onEvent.length > 0 ||
@@ -422,8 +471,9 @@ export function applyAction(
         .map((c) => (c.id === finalContract.id ? finalContract : c))
         .filter((c) => c.id !== finalContract.id || recurring)
       const result = { ...fired, contracts }
-      // React to skittles moved by the onSign clause.
-      return fireReceives(result, diffGains(state, result))
+      // React to skittles moved by the onSign clause, then chronicle it all.
+      const reacted = fireReceives(result, diffGains(state, result), 0, moves)
+      return appendLog(reacted, movesToLog(moves))
     }
     case 'reviseContract': {
       // Counter-offer: a party rewrites a not-yet-active contract's clauses,
@@ -481,7 +531,9 @@ export function applyAction(
         event: null,
         eventEndsAt: null,
         offers: [],
-        contracts: []
+        contracts: [],
+        log: [],
+        nextLogId: 0
       }
     }
     default:

@@ -91,21 +91,30 @@ export function allSigned(contract: Contract): boolean {
   return contract.parties.every((p) => contract.signed.includes(p))
 }
 
+/** One concrete skittle movement, for the event log. */
+export type Move = { from: string; to: string; skittles: SkittleSet }
+
 /**
  * Apply one set of transfers atomically: every party must be present and not
  * out, and every giver must hold the *gross* amount they give. Returns the new
  * state, or null if the transfers can't be honoured (caller skips them).
+ *
+ * If a `moves` array is passed, the concrete (evaluated, non-empty) movements
+ * are appended to it on success — purely for chronicling; the result is
+ * unchanged either way.
  */
 export function applyTransfers(
   state: GameState,
   transfers: Transfer[],
   event: GameEvent | null,
-  received?: SkittleSet
+  received?: SkittleSet,
+  moves?: Move[]
 ): GameState | null {
   if (transfers.length === 0) return state
 
   const give: Record<string, ReturnType<typeof emptySkittles>> = {}
   const receive: Record<string, ReturnType<typeof emptySkittles>> = {}
+  const applied: Move[] = []
 
   for (const t of transfers) {
     const from = state.players[t.from]
@@ -114,6 +123,9 @@ export function applyTransfers(
     const amounts = evalGive(t.give, { giver: from, event, received })
     give[t.from] = addSkittles(give[t.from] ?? emptySkittles(), amounts)
     receive[t.to] = addSkittles(receive[t.to] ?? emptySkittles(), amounts)
+    if (SKITTLE_COLOURS.some((c) => amounts[c] > 0)) {
+      applied.push({ from: t.from, to: t.to, skittles: amounts })
+    }
   }
 
   // Every giver must be able to afford their total outgoing.
@@ -129,13 +141,14 @@ export function applyTransfers(
     )
     players[id] = { ...players[id]!, skittles: next }
   }
+  if (moves) moves.push(...applied)
   return { ...state, players }
 }
 
 /** Fire a contract's onSign clause once (when fully signed). */
-export function fireOnSign(state: GameState, contract: Contract): GameState {
+export function fireOnSign(state: GameState, contract: Contract, moves?: Move[]): GameState {
   if (contract.signFired || !allSigned(contract)) return state
-  return applyTransfers(state, contract.onSign, state.event) ?? state
+  return applyTransfers(state, contract.onSign, state.event, undefined, moves) ?? state
 }
 
 /**
@@ -143,12 +156,12 @@ export function fireOnSign(state: GameState, contract: Contract): GameState {
  * event. A clause the giver can't afford is skipped (no penalty) and the
  * contract is flagged `unpaid` so the owed party can decide to void it.
  */
-export function fireOnEvent(state: GameState, event: GameEvent): GameState {
+export function fireOnEvent(state: GameState, event: GameEvent, moves?: Move[]): GameState {
   let next = state
   const flags = new Map<string, boolean>()
   for (const contract of state.contracts) {
     if (!allSigned(contract) || contract.onEvent.length === 0) continue
-    const applied = applyTransfers(next, contract.onEvent, event)
+    const applied = applyTransfers(next, contract.onEvent, event, undefined, moves)
     flags.set(contract.id, applied === null)
     if (applied) next = applied
   }
@@ -183,7 +196,8 @@ export function diffGains(before: GameState, after: GameState): Record<string, S
 export function fireReceives(
   state: GameState,
   gains: Record<string, SkittleSet>,
-  depth = 0
+  depth = 0,
+  moves?: Move[]
 ): GameState {
   if (depth >= MAX_RECEIVE_DEPTH) return state
   let next = state
@@ -192,12 +206,12 @@ export function fireReceives(
       if (!contract.parties.includes(pid)) continue
       const transfers = contract.onReceive.filter((t) => t.from === pid)
       if (transfers.length === 0) continue
-      const applied = applyTransfers(next, transfers, next.event, gain)
+      const applied = applyTransfers(next, transfers, next.event, gain, moves)
       if (applied) next = applied
     }
   }
   if (next === state) return next
-  return fireReceives(next, diffGains(state, next), depth + 1)
+  return fireReceives(next, diffGains(state, next), depth + 1, moves)
 }
 
 /**
@@ -205,13 +219,13 @@ export function fireReceives(
  * for its `from` party, so "if I'm eliminated, give you my reds" hands the
  * eliminated player's skittles over while they're still (just) in the game.
  */
-export function fireOnEliminate(state: GameState, eliminatedId: string): GameState {
+export function fireOnEliminate(state: GameState, eliminatedId: string, moves?: Move[]): GameState {
   let next = state
   for (const contract of state.contracts) {
     if (!allSigned(contract) || contract.onEliminate.length === 0) continue
     const transfers = contract.onEliminate.filter((t) => t.from === eliminatedId)
     if (transfers.length === 0) continue
-    next = applyTransfers(next, transfers, next.event) ?? next
+    next = applyTransfers(next, transfers, next.event, undefined, moves) ?? next
   }
   return next
 }
@@ -221,13 +235,13 @@ export function fireOnEliminate(state: GameState, eliminatedId: string): GameSta
  * Each clause fires for its `from` party, so "if I can't pay, you get my reds"
  * acts as agreed collateral or insurance.
  */
-export function fireOnDefault(state: GameState, defaulterId: string): GameState {
+export function fireOnDefault(state: GameState, defaulterId: string, moves?: Move[]): GameState {
   let next = state
   for (const contract of state.contracts) {
     if (!allSigned(contract) || contract.onDefault.length === 0) continue
     const transfers = contract.onDefault.filter((t) => t.from === defaulterId)
     if (transfers.length === 0) continue
-    next = applyTransfers(next, transfers, next.event) ?? next
+    next = applyTransfers(next, transfers, next.event, undefined, moves) ?? next
   }
   return next
 }

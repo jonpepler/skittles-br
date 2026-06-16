@@ -24,6 +24,19 @@ export type PlayerState = {
   out: boolean
 }
 
+/**
+ * One chronicled happening. `eliminated` is public knowledge (the player shows
+ * "out" to everyone); `event` (paying a cost for a reward) and `transfer`
+ * (skittles moving between players) are redacted to neighbour-visibility like
+ * skittle holdings are.
+ */
+export type LogBody =
+  | { kind: 'eliminated'; player: string }
+  | { kind: 'event'; player: string; paid: SkittleSet; gained: SkittleSet }
+  | { kind: 'transfer'; from: string; to: string; skittles: SkittleSet }
+
+export type LogEntry = LogBody & { id: number; round: number }
+
 /** A proposed swap: `from` gives `give` to `to`, and receives `receive` back. */
 export type TradeOffer = {
   id: string
@@ -60,6 +73,10 @@ export type GameState = {
   contracts: Contract[]
   /** Monotonic counter for assigning contract ids. */
   nextContractId: number
+  /** Chronicle of core happenings, oldest first (capped, redacted per viewer). */
+  log: LogEntry[]
+  /** Monotonic counter for assigning log-entry ids. */
+  nextLogId: number
 }
 
 /**
