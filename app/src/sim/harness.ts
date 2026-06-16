@@ -44,6 +44,7 @@ export interface GameResult {
   events: number
   transfers: number
   eliminations: number
+  conquests: number
   /** alive / seated, per archetype name. */
   archetype: Record<string, { alive: number; seated: number }>
 }
@@ -64,6 +65,20 @@ export function runGame(seed: string, cfg: GameConfig): GameResult {
 
   let now = 0
   while (s.phase === 'active') {
+    // Aggressors commit Force against a neighbour...
+    for (const id of seats) {
+      if (!alive(id)) continue
+      const atk = policyOf(id).attack?.(redactStateFor(s, id), id, rng)
+      if (atk) s = applyAction(s, id, { type: 'declareAttack', to: atk.to, force: atk.force })
+    }
+    // ...and a targeted nation defends with what red it can muster.
+    for (const id of seats) {
+      if (!alive(id)) continue
+      for (const a of s.attacks.filter((a) => a.to === id)) {
+        const commit = Math.min(s.players[id]?.skittles?.red ?? 0, a.force)
+        if (commit > 0) s = applyAction(s, id, { type: 'defend', attackId: a.id, force: commit })
+      }
+    }
     // Income arrives automatically via the round's allotment (below). Bots only
     // make social moves: propose gifts, then accept any addressed to you.
     for (const id of seats) {
@@ -107,6 +122,7 @@ function metrics(s: GameState, seats: string[], policyOf: (id: string) => Policy
     events: s.log.filter((e) => e.kind === 'event').length,
     transfers: s.log.filter((e) => e.kind === 'transfer').length,
     eliminations: elim.length,
+    conquests: s.log.filter((e) => e.kind === 'conquered').length,
     archetype
   }
 }
@@ -124,6 +140,8 @@ export interface SuiteMetrics {
   meanTransfers: number
   meanEvents: number
   meanEliminations: number
+  meanConquests: number
+  conquestRate: number
   archetypeSurvival: Record<string, number>
 }
 
@@ -158,6 +176,8 @@ export function runSuite(seeds: string[], cfg: GameConfig): SuiteMetrics {
     meanTransfers: mean((r) => r.transfers),
     meanEvents: mean((r) => r.events),
     meanEliminations: mean((r) => r.eliminations),
+    meanConquests: mean((r) => r.conquests),
+    conquestRate: results.filter((r) => r.conquests > 0).length / results.length,
     archetypeSurvival
   }
 }
@@ -190,6 +210,8 @@ balance experiment log. Tunes the economy's physics, not the game's politics._
 | Mean Events logged / game | ${m.meanEvents.toFixed(2)} |
 | Mean transfers logged / game | ${m.meanTransfers.toFixed(2)} |
 | Mean eliminations / game | ${m.meanEliminations.toFixed(2)} |
+| Mean conquests / game | ${m.meanConquests.toFixed(2)} |
+| Games with a conquest | ${pct(m.conquestRate)} |
 
 ## Survival by archetype
 

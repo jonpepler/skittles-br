@@ -9,20 +9,23 @@ balance experiment log. Tunes the economy's physics, not the game's politics._
 
 | Metric | Value |
 |---|---|
-| Mean survival rate | 47.5% |
-| Mean survivors | 2.38 / 5 |
-| Mean game length (rounds) | 19.23 |
-| Mean round of first elimination | 10.18 |
+| Mean survival rate | 35.5% |
+| Mean survivors | 1.77 / 5 |
+| Mean game length (rounds) | 19.38 |
+| Mean round of first elimination | 11.60 |
 | Games with a turn-1 death | 0.0% |
-| Mean final wealth concentration (top share) | 25.3% |
-| Mean Events logged / game | 72.35 |
-| Mean transfers logged / game | 11.82 |
-| Mean eliminations / game | 2.63 |
+| Mean final wealth concentration (top share) | 38.2% |
+| Mean Events logged / game | 54.08 |
+| Mean transfers logged / game | 2.27 |
+| Mean eliminations / game | 1.52 |
+| Mean conquests / game | 1.70 |
+| Games with a conquest | 100.0% |
 
 ## Survival by archetype
 
 | Archetype | Survival rate |
 |---|---|
-| Isolationist | 55.0% |
+| Isolationist | 33.8% |
 | Hoarder | 47.5% |
-| Patron | 32.5% |
+| Patron | 2.5% |
+| Aggressor | 60.0% |

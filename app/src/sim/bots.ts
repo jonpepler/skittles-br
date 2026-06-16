@@ -19,6 +19,8 @@ export interface Policy {
   name: string
   /** Optionally gift one of a colour to a neighbour (models mutual aid). */
   aid(view: GameState, self: string, rng: Rng): { to: string; colour: SkittleColour } | null
+  /** Optionally commit Force (red) to Attack a neighbour. */
+  attack?(view: GameState, self: string, rng: Rng): { to: string; force: number } | null
 }
 
 const total = (s: SkittleSet | null): number =>
@@ -51,4 +53,22 @@ export const PATRON: Policy = {
   }
 }
 
-export const ARCHETYPES: Policy[] = [ISOLATIONIST, HOARDER, PATRON]
+/** Attacks its weakest red-holding neighbour with just enough Force to win. */
+export const AGGRESSOR: Policy = {
+  name: 'Aggressor',
+  aid: () => null,
+  attack: (view, self) => {
+    const me = view.players[self]
+    if (!me?.skittles || me.skittles.red < 2) return null
+    const targets = neighboursOf(view.order, self)
+      .map((id) => view.players[id])
+      .filter((p): p is NonNullable<typeof p> => !!p && !p.out && !!p.skittles)
+    if (targets.length === 0) return null
+    const weakest = targets.reduce((a, b) => (a.skittles!.red <= b.skittles!.red ? a : b))
+    const need = weakest.skittles!.red + 1 // exceed whatever they can muster
+    if (me.skittles.red < need) return null
+    return { to: weakest.id, force: need }
+  }
+}
+
+export const ARCHETYPES: Policy[] = [ISOLATIONIST, HOARDER, PATRON, AGGRESSOR]
