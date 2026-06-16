@@ -97,14 +97,24 @@ export function contractToClauses(c: Contract): ClauseDraft[] {
   return out
 }
 
+/** Comma-separate a list with a final "and": "a, b and c". */
+function listWithAnd(parts: string[]): string {
+  if (parts.length <= 1) return parts.join('')
+  return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
+}
+
 export function describeAmount(expr: AmountExpr, colour: SkittleColour): string {
-  if (typeof expr === 'number') return `${expr} ${colour}`
+  if (typeof expr === 'number') return `${expr} ${expr === 1 ? colour : `${colour}s`}`
   if ('all' in expr) return `all their ${expr.all}`
   if ('eventReq' in expr) return `the required ${expr.eventReq}`
   if ('received' in expr) return `the ${expr.received} they received`
-  if ('percent' in expr) return `${expr.percent}% of (${describeAmount(expr.of, colour)})`
-  if ('min' in expr) return `the smallest of (${expr.min.map((e) => describeAmount(e, colour)).join(', ')})`
-  return `the total of (${expr.sum.map((e) => describeAmount(e, colour)).join(', ')})`
+  if ('percent' in expr) return `${expr.percent}% of ${describeAmount(expr.of, colour)}`
+  if ('min' in expr) {
+    const parts = expr.min.map((e) => describeAmount(e, colour))
+    const lead = parts.length === 2 ? 'the smaller of ' : 'the smallest of '
+    return `${lead}${listWithAnd(parts)}`
+  }
+  return listWithAnd(expr.sum.map((e) => describeAmount(e, colour)))
 }
 
 export function describeClause(c: ClauseDraft, nameOf: (id: string) => string): string {

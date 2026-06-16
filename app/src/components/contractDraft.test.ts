@@ -55,11 +55,12 @@ describe('contractToClauses', () => {
 
 describe('describeAmount', () => {
   it('renders nested expressions in English', () => {
-    expect(describeAmount(3, 'red')).toBe('3 red')
+    expect(describeAmount(1, 'red')).toBe('1 red')
+    expect(describeAmount(3, 'red')).toBe('3 reds')
     expect(describeAmount({ all: 'green' }, 'red')).toBe('all their green')
     expect(
       describeAmount({ min: [{ percent: 50, of: { received: 'red' } }, 3] }, 'red')
-    ).toBe('the smallest of (50% of (the red they received), 3 red)')
+    ).toBe('the smaller of 50% of the red they received and 3 reds')
   })
 })
 
@@ -67,7 +68,7 @@ describe('describeClause', () => {
   it('reads like a sentence', () => {
     const c = newClause('me', 'you')
     expect(describeClause({ ...c, amount: 2, colour: 'green' }, (id) => id)).toBe(
-      'When signed, me gives you 2 green.'
+      'When signed, me gives you 2 greens.'
     )
   })
 })
