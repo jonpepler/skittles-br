@@ -412,16 +412,36 @@ h3 {
   gap: 0.4rem;
 }
 
-/* Skittle holding: a colour circle for the unit, then the count beside it. */
+/* Skittle holding: a coloured coin with the count inside. */
 .token {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  justify-content: center;
+  min-width: 1.7rem;
+  height: 1.7rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
   font: inherit;
   font-weight: 800;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   line-height: 1;
   color: var(--ink);
+}
+.token.skittle--red {
+  background: var(--red);
+}
+.token.skittle--orange {
+  background: var(--orange);
+}
+.token.skittle--yellow {
+  background: var(--yellow);
+}
+.token.skittle--purple {
+  background: var(--purple);
+}
+.token.skittle--green {
+  background: var(--green);
 }
 .player-card__hidden {
   color: var(--muted);
