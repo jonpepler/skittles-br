@@ -133,7 +133,7 @@ export function GameScreen({
       {state?.phase === 'active' && self && (
         <section>
           {self.out ? (
-            <p className="game__hint">You've been eliminated — spectating.</p>
+            <p className="game__hint">You've been eliminated. Spectating.</p>
           ) : (
             self.skittles && (
               <>

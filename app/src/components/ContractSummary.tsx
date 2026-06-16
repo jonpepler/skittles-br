@@ -14,7 +14,7 @@ export function ContractSummary({
 }) {
   const statements = summarise(buckets)
   if (statements.length === 0) {
-    return <p className="summary summary--empty">No terms yet — add a clause.</p>
+    return <p className="summary summary--empty">No terms yet. Add a clause.</p>
   }
 
   return (
