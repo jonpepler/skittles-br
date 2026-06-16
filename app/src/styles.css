@@ -1,0 +1,1107 @@
+:root {
+  /* Bright skittle fills on a paper base. */
+  --red: #ff5a5f;
+  --orange: #ff9f1c;
+  --yellow: #ffd23f;
+  --green: #2ec27e;
+  --purple: #9b5de5;
+
+  --paper: #f3ead6; /* warm cream page */
+  --card: #fffdf5; /* off-white card */
+  --ink: #241f1a; /* near-black ink for outlines + text */
+  --muted: #7a7066;
+  --accent: #ff5a5f;
+
+  --shadow: 3px 3px 0 var(--ink);
+  --shadow-sm: 2px 2px 0 var(--ink);
+
+  --chip-h: 2.5rem;
+  --radius: 12px;
+
+  font-family: 'Comic Sans MS', 'Comic Neue', 'Chalkboard SE', ui-rounded,
+    'Segoe UI Rounded', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background-color: var(--paper);
+  background-image: radial-gradient(rgba(0, 0, 0, 0.05) 1.3px, transparent 1.3px);
+  background-size: 20px 20px;
+}
+
+#root {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 0.6rem;
+}
+
+/* ── Buttons: cut-out paper stickers ─────────────────────────────── */
+.btn {
+  height: var(--chip-h);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0 1rem;
+  background: var(--card);
+  color: var(--ink);
+  border: 2.5px solid var(--ink);
+  border-radius: 12px;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: transform 0.07s, box-shadow 0.07s;
+}
+.btn:hover:not(:disabled) {
+  transform: rotate(-1deg) translateY(-1px);
+}
+.btn:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: var(--shadow-sm);
+}
+.btn--large {
+  height: 3rem;
+  padding: 0 1.7rem;
+  font-size: 1.15rem;
+  font-weight: 800;
+  background: var(--yellow);
+}
+
+/* ── Landing ─────────────────────────────────────────────────────── */
+.landing {
+  text-align: center;
+  padding-top: 4rem;
+}
+.landing__title {
+  font-size: 4.5rem;
+  font-weight: 900;
+  margin: 0;
+}
+.landing__letter {
+  display: inline-block;
+  -webkit-text-stroke: 2.5px var(--ink);
+  text-shadow: 3px 3px 0 var(--ink);
+}
+.landing__letter:nth-child(odd) {
+  transform: rotate(-4deg);
+}
+.landing__letter:nth-child(even) {
+  transform: rotate(3deg);
+}
+.landing__letter--0 {
+  color: var(--red);
+}
+.landing__letter--1 {
+  color: var(--orange);
+}
+.landing__letter--2 {
+  color: var(--yellow);
+}
+.landing__letter--3 {
+  color: var(--green);
+}
+.landing__letter--4 {
+  color: var(--purple);
+}
+.landing__tagline {
+  color: var(--muted);
+  margin: 1rem 0 2rem;
+}
+.landing__divider {
+  margin: 1.5rem 0;
+  color: var(--muted);
+}
+.landing__join {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+.landing__input {
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  text-align: center;
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding: 0 1rem;
+  height: var(--chip-h);
+  border-radius: 10px;
+  border: 2.5px solid var(--ink);
+  background: var(--card);
+  color: var(--ink);
+}
+
+/* ── Game shell ──────────────────────────────────────────────────── */
+.game__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 3px dashed var(--ink);
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+}
+.game__label {
+  color: var(--muted);
+}
+.game__code {
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.game__host {
+  color: var(--muted);
+}
+.game__phase {
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--accent);
+}
+.game__hint {
+  color: var(--muted);
+}
+.complete {
+  text-align: center;
+  padding: 2rem 0;
+}
+.complete h2 {
+  font-size: 2.2rem;
+}
+.complete__winners {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+/* ── Skittle collect buttons (coloured stickers) ─────────────────── */
+.skittle-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.skittle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: var(--chip-h);
+  padding: 0 0.9rem;
+  text-transform: capitalize;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 800;
+  border: 2.5px solid var(--ink);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+.skittle-btn:hover {
+  transform: rotate(-1deg) translateY(-1px);
+}
+.skittle-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+.skittle-btn--red {
+  background: var(--red);
+}
+.skittle-btn--orange {
+  background: var(--orange);
+}
+.skittle-btn--yellow {
+  background: var(--yellow);
+}
+.skittle-btn--purple {
+  background: var(--purple);
+}
+.skittle-btn--green {
+  background: var(--green);
+}
+.skittle__dot {
+  width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 50%;
+  display: inline-block;
+  border: 1.5px solid var(--ink);
+}
+.skittle--red .skittle__dot {
+  background: var(--red);
+}
+.skittle--orange .skittle__dot {
+  background: var(--orange);
+}
+.skittle--yellow .skittle__dot {
+  background: var(--yellow);
+}
+.skittle--purple .skittle__dot {
+  background: var(--purple);
+}
+.skittle--green .skittle__dot {
+  background: var(--green);
+}
+
+/* ── Share invite ────────────────────────────────────────────────── */
+.share {
+  margin-bottom: 1.5rem;
+}
+.share__link {
+  display: flex;
+  gap: 0.5rem;
+  max-width: 520px;
+  margin-bottom: 1rem;
+}
+.share__url {
+  flex: 1;
+  padding: 0 0.75rem;
+  height: var(--chip-h);
+  border-radius: 10px;
+  border: 2.5px solid var(--ink);
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9rem;
+}
+.qr {
+  background: #fff;
+  padding: 8px;
+  border: 2.5px solid var(--ink);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  width: 180px;
+  height: 180px;
+}
+.qr svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.game__setting {
+  display: block;
+  margin: 0 0 1rem;
+  font-weight: 600;
+}
+.length {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+.length__label {
+  font-weight: 700;
+}
+.seg {
+  display: inline-flex;
+  border: 2.5px solid var(--ink);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.seg__btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.05;
+  gap: 0.1rem;
+  padding: 0.3rem 0.8rem;
+  height: var(--chip-h);
+  justify-content: center;
+  background: var(--card);
+  color: var(--ink);
+  border: none;
+  border-right: 2px solid var(--ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.seg__btn:last-child {
+  border-right: none;
+}
+.seg__btn--on {
+  background: var(--yellow);
+}
+.seg__n {
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+.length__custom {
+  font-weight: 700;
+}
+.game__duration,
+.game__rounds {
+  width: 4.5rem;
+  height: var(--chip-h);
+  padding: 0 0.5rem;
+  border-radius: 8px;
+  border: 2.5px solid var(--ink);
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+}
+
+/* ── Cards ───────────────────────────────────────────────────────── */
+.player-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.1rem;
+  margin-top: 1.5rem;
+}
+.player-card {
+  background: var(--card);
+  border: 2.5px solid var(--ink);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.player-card:nth-child(odd) {
+  transform: rotate(-1deg);
+}
+.player-card:nth-child(even) {
+  transform: rotate(1deg);
+}
+.player-card--self {
+  outline: 3px dashed var(--accent);
+  outline-offset: 2px;
+}
+.player-card--out {
+  opacity: 0.6;
+  filter: grayscale(0.7);
+}
+.player-card__flag {
+  border-bottom: 2.5px solid var(--ink);
+}
+.player-card__flag svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.player-card__body {
+  padding: 0.7rem;
+}
+.player-card__name {
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+}
+.player-card__out-badge {
+  color: var(--red);
+  font-weight: 800;
+}
+.player-card__skittles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* Skittle holding: a coloured coin with the count inside. */
+.token {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.7rem;
+  height: 1.7rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  font: inherit;
+  font-weight: 800;
+  font-size: 0.85rem;
+  line-height: 1;
+  color: var(--ink);
+}
+.token.skittle--red {
+  background: var(--red);
+}
+.token.skittle--orange {
+  background: var(--orange);
+}
+.token.skittle--yellow {
+  background: var(--yellow);
+}
+.token.skittle--purple {
+  background: var(--purple);
+}
+.token.skittle--green {
+  background: var(--green);
+}
+.player-card__hidden {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+/* ── Event ───────────────────────────────────────────────────────── */
+.event {
+  background: var(--card);
+  border: 2.5px solid var(--ink);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1rem;
+  margin: 1rem 0;
+}
+.event__round {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+  color: var(--accent);
+}
+.event__kind {
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 0 0.5rem;
+  color: var(--ink);
+}
+.event__kind--threat {
+  background: var(--red);
+}
+.event__kind--opportunity {
+  background: var(--green);
+}
+.event--opportunity .event__round {
+  color: var(--green);
+}
+.event__name {
+  margin: 0.25rem 0;
+}
+.event__description {
+  color: var(--muted);
+  margin: 0 0 0.75rem;
+}
+.event__timer {
+  font-weight: 800;
+  color: var(--ink);
+  background: var(--yellow);
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.event__grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.4rem 1rem;
+  margin: 0 0 0.5rem;
+}
+.event__grid dt {
+  color: var(--muted);
+  font-weight: 700;
+}
+.event__grid dd {
+  margin: 0;
+}
+.event__gate {
+  font-weight: 700;
+  margin: 0;
+}
+.event__costs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.event__costs .skittle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.event__none {
+  color: var(--muted);
+}
+
+/* ── Trade ───────────────────────────────────────────────────────── */
+.trade,
+.contracts {
+  margin-top: 1.5rem;
+  border-top: 3px dashed var(--ink);
+  padding-top: 1.25rem;
+}
+.trade__form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.trade__form select {
+  height: var(--chip-h);
+  padding: 0 0.5rem;
+  border-radius: 8px;
+  border: 2px solid var(--ink);
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+}
+.trade__amounts {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.trade__amounts-label {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.trade__amount {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+.trade__amount input {
+  width: 3rem;
+  height: 2rem;
+  padding: 0 0.3rem;
+  border-radius: 6px;
+  border: 2px solid var(--ink);
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  text-align: center;
+}
+.trade__costs {
+  display: inline-flex;
+  gap: 0.5rem;
+}
+.trade__costs .skittle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+.trade__offer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 2px dashed var(--ink);
+}
+.trade__offer-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* ── Contract editor ─────────────────────────────────────────────── */
+.editor {
+  background: var(--card);
+  border: 2.5px solid var(--ink);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1rem 1.1rem 1.1rem;
+  margin-bottom: 1.25rem;
+}
+.editor__parties {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.85rem;
+  margin-bottom: 0.85rem;
+  border-bottom: 2px dashed var(--ink);
+}
+.editor__party {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.clause-card {
+  position: relative;
+  background: #fff;
+  border: 2.5px solid var(--ink);
+  border-left-width: 8px;
+  border-radius: 10px;
+  padding: 0.7rem 0.8rem;
+  margin-bottom: 0.7rem;
+}
+.clause-card--now {
+  border-left-color: var(--purple);
+}
+.clause-card--event {
+  border-left-color: var(--orange);
+}
+.clause-card--receive {
+  border-left-color: var(--green);
+}
+.clause-card--eliminate {
+  border-left-color: var(--red);
+}
+.clause-card__x {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-weight: 800;
+  line-height: 1;
+}
+.clause-card__x:hover {
+  color: var(--red);
+}
+.clause {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.45rem;
+  padding-right: 1.2rem;
+}
+.clause__deal {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.45rem;
+}
+
+/* ── Chips: every control shares one height ──────────────────────── */
+.chip {
+  box-sizing: border-box;
+  height: var(--chip-h);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 0.65rem;
+  background: var(--card);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: 9px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+select.chip {
+  padding-right: 1.6rem;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6' fill='none' stroke='%23241f1a' stroke-width='1.8'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.55rem center;
+  background-size: 0.6rem;
+}
+input.chip {
+  cursor: text;
+}
+.chip:hover {
+  background: #fff;
+}
+.chip--when {
+  background: var(--yellow);
+}
+.chip--num {
+  width: 3.4rem;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+.chip--num::-webkit-outer-spin-button,
+.chip--num::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.chip--x,
+.chip--add {
+  padding: 0 0.6rem;
+  font-weight: 800;
+}
+.cpick {
+  box-sizing: border-box;
+  height: var(--chip-h);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.cpick__dot {
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.45;
+  transition: opacity 0.1s, transform 0.1s;
+}
+.cpick__dot:hover {
+  opacity: 0.85;
+}
+.cpick__dot--on {
+  opacity: 1;
+  transform: scale(1.18) rotate(-6deg);
+}
+.cpick__dot.skittle--red {
+  background: var(--red);
+}
+.cpick__dot.skittle--orange {
+  background: var(--orange);
+}
+.cpick__dot.skittle--yellow {
+  background: var(--yellow);
+}
+.cpick__dot.skittle--purple {
+  background: var(--purple);
+}
+.cpick__dot.skittle--green {
+  background: var(--green);
+}
+
+/* keywords + nested amount groups */
+.amt {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+.amt__kw {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+.amt__nest,
+.amt__list,
+.amt__item {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+.amt__nest,
+.amt__list {
+  padding: 0.15rem 0.4rem;
+  border-radius: 8px;
+  border: 2px dashed var(--ink);
+}
+
+/* ── Faction chips (the flag is the identity) ────────────────────── */
+.faction {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0.12rem 0.5rem 0.12rem 0.28rem;
+  border: 2px solid var(--ink);
+  border-radius: 9px;
+  background: var(--card);
+  line-height: 1.4;
+  font-weight: 700;
+  vertical-align: middle;
+}
+.faction--sm {
+  font-size: 0.82rem;
+}
+.faction__flag {
+  width: 1.7rem;
+  height: 1.13rem;
+  border: 1.5px solid var(--ink);
+  border-radius: 4px;
+  overflow: hidden;
+  flex: none;
+}
+.faction--sm .faction__flag {
+  width: 1.4rem;
+  height: 0.93rem;
+}
+.faction__flag svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.faction__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.faction__you {
+  font-size: 0.7em;
+  font-weight: 800;
+  color: var(--ink);
+  background: var(--yellow);
+  border: 1.5px solid var(--ink);
+  padding: 0 0.3rem;
+  border-radius: 999px;
+}
+.fselect {
+  gap: 0.4rem;
+  padding-left: 0.4rem;
+}
+.fselect select {
+  background: transparent;
+  border: none;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0 1.1rem 0 0;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6' fill='none' stroke='%23241f1a' stroke-width='1.8'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right center;
+  background-size: 0.6rem;
+}
+.fselect select:focus {
+  outline: none;
+}
+
+/* ── Editor footer + contract list ───────────────────────────────── */
+.contracts__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.9rem;
+  margin-top: 0.9rem;
+}
+.contracts__expiry {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.contracts__list {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.9rem;
+}
+.contracts__item {
+  background: var(--card);
+  border: 2.5px solid var(--ink);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 0.85rem 0.9rem;
+}
+.contracts__item-body {
+  width: 100%;
+}
+.contracts__item-parties {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+.contracts__item-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+.contracts__unpaid {
+  font-weight: 800;
+  color: var(--red);
+}
+
+/* ── Merged summary: a sticky note ───────────────────────────────── */
+.summary {
+  margin-top: 0.85rem;
+  padding: 0.75rem 0.95rem;
+  border: 2.5px solid var(--ink);
+  border-radius: 10px;
+  background: #fff3a8;
+  box-shadow: var(--shadow);
+  transform: rotate(-0.7deg);
+}
+.summary__line {
+  margin: 0.35rem 0;
+  line-height: 2;
+}
+.summary__when {
+  font-weight: 800;
+  color: var(--accent);
+  text-transform: uppercase;
+  font-size: 0.8em;
+  letter-spacing: 0.03em;
+}
+.summary--empty {
+  color: var(--muted);
+  font-style: italic;
+  margin: 0;
+}
+.dot {
+  display: inline-block;
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 50%;
+  vertical-align: middle;
+  border: 1.5px solid var(--ink);
+}
+.dot.skittle--red {
+  background: var(--red);
+}
+.dot.skittle--orange {
+  background: var(--orange);
+}
+.dot.skittle--yellow {
+  background: var(--yellow);
+}
+.dot.skittle--purple {
+  background: var(--purple);
+}
+.dot.skittle--green {
+  background: var(--green);
+}
+
+/* ── Mobile: keep the scrappy-paper look, just make it fit a phone ──── */
+@media (max-width: 640px) {
+  /* Reclaim horizontal room from the page gutter. */
+  #root {
+    padding: 0.85rem;
+  }
+
+  /* Nothing should push the page wider than the screen. */
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Header wraps instead of squashing the room code into the phase badge. */
+  .game__header {
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+  }
+
+  /* The big title can be too wide for narrow phones; scale it down. */
+  .landing {
+    padding-top: 2.5rem;
+  }
+  .landing__title {
+    font-size: 3rem;
+  }
+  .landing__join {
+    flex-wrap: wrap;
+  }
+  .landing__input {
+    flex: 1 1 8rem;
+    min-width: 0;
+  }
+
+  /* Share link must not blow out the row: let the field shrink. */
+  .share__link {
+    max-width: none;
+  }
+  .share__url {
+    min-width: 0;
+  }
+  .qr {
+    width: 150px;
+    height: 150px;
+  }
+
+  /* Game-length presets: let the segmented control fill the width. */
+  .seg {
+    flex: 1 1 100%;
+  }
+  .seg__btn {
+    flex: 1;
+    padding: 0.3rem 0.4rem;
+  }
+
+  /* Trade amounts overflowed off-screen (5 inputs in one fixed row). Wrap
+     them and give each colour input a comfortable tap size. */
+  .trade__amounts {
+    flex-wrap: wrap;
+    gap: 0.4rem 0.6rem;
+  }
+  .trade__amounts-label {
+    flex: 1 1 100%;
+  }
+  .trade__amount input {
+    width: 2.6rem;
+    height: 2.4rem;
+  }
+  .trade__form select {
+    max-width: 100%;
+  }
+
+  /* Stack each offer's description above its accept/decline buttons. */
+  .trade__offer {
+    flex-wrap: wrap;
+  }
+
+  /* Faction selects sized to their longest option name, overflowing the
+     viewport. Cap them and ellipsize the chosen name. */
+  .fselect {
+    max-width: 100%;
+    min-width: 0;
+  }
+  .fselect select {
+    min-width: 0;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* Party tags truncate too, so a long faction name can't widen the row. */
+  .editor__party {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Compact the contract editor: tighter cards, and chips that size to their
+     content and wrap, instead of one full-width chip per line (which made each
+     clause very tall). The "X gives Y" deal sits on its own line. */
+  .editor {
+    padding: 0.7rem 0.7rem 0.85rem;
+  }
+  .clause-card {
+    padding: 0.55rem 0.6rem;
+    margin-bottom: 0.5rem;
+  }
+  .clause {
+    gap: 0.3rem 0.4rem;
+  }
+  .clause select.chip,
+  .clause .fselect {
+    flex: 0 1 auto;
+    max-width: 100%;
+  }
+  .clause__deal {
+    flex: 1 1 100%;
+    gap: 0.3rem;
+  }
+  /* Giver and recipient share one line (names truncate; the flag identifies
+     them) so the deal reads as "A gives B" instead of three stacked rows. */
+  .clause__deal .fselect {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .clause__deal .amt__kw {
+    flex: 0 0 auto;
+  }
+  .amt__nest,
+  .amt__list {
+    padding: 0.1rem 0.3rem;
+  }
+  .editor__parties {
+    gap: 0.4rem;
+    padding-bottom: 0.6rem;
+    margin-bottom: 0.6rem;
+  }
+
+  /* Slightly larger colour dots — easier to tap inside the picker. */
+  .cpick__dot {
+    width: 1.4rem;
+    height: 1.4rem;
+  }
+
+  /* Footer actions stack so the primary button gets a full-width hit area. */
+  .contracts__actions .btn--large {
+    flex: 1 1 100%;
+  }
+}
