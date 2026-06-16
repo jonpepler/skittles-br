@@ -5,7 +5,7 @@ file only changes when the engine or bots change, so its git history is the
 balance experiment log. Tunes the economy's physics, not the game's politics._
 
 - **Games:** 40 (5 bots each, up to 12 rounds)
-- **Engine:** current collect-by-action economy (pre-redesign)
+- **Economy:** random starting hand + per-round allotment (no tapping)
 
 | Metric | Value |
 |---|---|
@@ -14,15 +14,15 @@ balance experiment log. Tunes the economy's physics, not the game's politics._
 | Mean game length (rounds) | 3.52 |
 | Mean round of first elimination | 3.31 |
 | Games with a turn-1 death | 22.5% |
-| Mean final wealth concentration (top share) | 27.6% |
-| Mean Events logged / game | 0.45 |
-| Mean transfers logged / game | 3.52 |
+| Mean final wealth concentration (top share) | 27.8% |
+| Mean Events logged / game | 0.68 |
+| Mean transfers logged / game | 2.15 |
 | Mean eliminations / game | 4.88 |
 
 ## Survival by archetype
 
 | Archetype | Survival rate |
 |---|---|
-| Spreader | 2.5% |
+| Isolationist | 2.5% |
 | Hoarder | 2.5% |
 | Patron | 2.5% |

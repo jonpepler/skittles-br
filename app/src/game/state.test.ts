@@ -17,7 +17,7 @@ import {
   resolveEvent
 } from './state.js'
 import type { GameState } from './types.js'
-import type { SkittleSet } from '../generators/event.js'
+import { SKITTLE_COLOURS, type SkittleSet } from '../generators/event.js'
 
 const set = (partial: Partial<SkittleSet>): SkittleSet => ({
   red: 0,
@@ -30,7 +30,8 @@ const set = (partial: Partial<SkittleSet>): SkittleSet => ({
 
 function activeWith(...ids: string[]): GameState {
   const lobby = ids.reduce((s, id) => addPlayer(s, id), createGame(ROOM, ids[0] ?? 'host'))
-  return applyAction(lobby, ids[0]!, { type: 'start' })
+  // Force an empty starting hand so tests set up holdings explicitly.
+  return applyAction(lobby, ids[0]!, { type: 'start', hands: emptySkittles() })
 }
 
 function giveSkittles(state: GameState, id: string, skittles: SkittleSet): GameState {
@@ -69,11 +70,10 @@ describe('game state', () => {
 
   it('addPlayer is idempotent (no duplicate / no reset)', () => {
     let s = lobbyWith('host', 'p2')
-    s = applyAction(s, 'host', { type: 'start' })
-    s = applyAction(s, 'p2', { type: 'incrementSkittle', colour: 'red' })
-    const before = s.players['p2']!.skittles!.red
+    s = applyAction(s, 'host', { type: 'start' }) // deals p2 a hand
+    const before = s.players['p2']!.skittles!
     const after = addPlayer(s, 'p2')
-    expect(after.players['p2']!.skittles!.red).toBe(before)
+    expect(after.players['p2']!.skittles).toEqual(before)
   })
 
   it('removePlayer removes only the named player and is idempotent', () => {
@@ -112,28 +112,28 @@ describe('applyAction — authority and validation', () => {
     expect(applyAction(lobby, 'host', { type: 'start' }).phase).toBe('active')
   })
 
-  it('increments a skittle by exactly one for the sender only', () => {
+  it('deals an unequal starting hand on start, deterministically', () => {
     const active = applyAction(lobbyWith('host', 'p2'), 'host', { type: 'start' })
-    const next = applyAction(active, 'p2', { type: 'incrementSkittle', colour: 'green' })
-    expect(next.players['p2']!.skittles!.green).toBe(1)
-    expect(next.players['host']!.skittles!.green).toBe(0)
+    const hand = active.players['p2']!.skittles!
+    expect(SKITTLE_COLOURS.reduce((a, c) => a + hand[c], 0)).toBeGreaterThan(0)
+    // Same room + player ⇒ same hand (seed-driven).
+    const again = applyAction(lobbyWith('host', 'p2'), 'host', { type: 'start' })
+    expect(again.players['p2']!.skittles).toEqual(hand)
+    // A forced hand overrides the deal (the e2e/scripting hook).
+    const forced = applyAction(lobbyWith('host', 'p2'), 'host', { type: 'start', hands: set({ red: 4 }) })
+    expect(forced.players['p2']!.skittles).toEqual(set({ red: 4 }))
   })
 
-  it('ignores skittle increments before the game is active', () => {
-    const lobby = lobbyWith('host', 'p2')
-    const next = applyAction(lobby, 'p2', { type: 'incrementSkittle', colour: 'red' })
-    expect(next).toBe(lobby)
-  })
-
-  it('ignores increments from a non-player (the spoofing case)', () => {
+  it('grants each living player an allotment when an event is triggered', () => {
     const active = applyAction(lobbyWith('host', 'p2'), 'host', { type: 'start' })
-    const next = applyAction(active, 'intruder', { type: 'incrementSkittle', colour: 'red' })
-    expect(next).toBe(active)
+    const before = active.players['p2']!.skittles!.red
+    const next = applyAction(active, 'host', { type: 'triggerEvent', allotment: set({ red: 3 }) })
+    expect(next.players['p2']!.skittles!.red).toBe(before + 3)
+    expect(next.players['host']!.skittles!.red).toBe(active.players['host']!.skittles!.red + 3)
   })
 
   it('reset returns to lobby, zeroes skittles and clears the event (host only)', () => {
     let s = applyAction(lobbyWith('host', 'p2'), 'host', { type: 'start' })
-    s = applyAction(s, 'p2', { type: 'incrementSkittle', colour: 'yellow' })
     s = applyAction(s, 'host', { type: 'triggerEvent' })
     expect(applyAction(s, 'p2', { type: 'reset' })).toBe(s) // guest can't reset
     const reset = applyAction(s, 'host', { type: 'reset' })
@@ -187,10 +187,10 @@ describe('host election and migration', () => {
 
   it('preserves in-progress state (phase and skittles) across migration', () => {
     let s = applyAction(lobbyWith('aaa', 'mmm'), 'aaa', { type: 'start' })
-    s = applyAction(s, 'mmm', { type: 'incrementSkittle', colour: 'purple' })
+    s = applyAction(s, 'aaa', { type: 'triggerEvent', allotment: set({ purple: 1 }) })
     const migrated = migrateHost(s, 'mmm', 'aaa')
     expect(migrated.phase).toBe('active')
-    expect(migrated.players['mmm']!.skittles!.purple).toBe(1)
+    expect(migrated.players['mmm']!.skittles).toEqual(s.players['mmm']!.skittles)
   })
 })
 
@@ -338,10 +338,9 @@ describe('event resolution', () => {
 })
 
 describe('elimination', () => {
-  it('stops an eliminated player from collecting or trading', () => {
+  it('stops an eliminated player from trading', () => {
     let game = activeWith('a', 'b')
     game = { ...game, players: { ...game.players, a: { ...game.players['a']!, out: true } } }
-    expect(applyAction(game, 'a', { type: 'incrementSkittle', colour: 'red' })).toBe(game)
     expect(
       applyAction(game, 'a', { type: 'proposeTrade', to: 'b', give: set({}), receive: set({}) }).offers
     ).toHaveLength(0)

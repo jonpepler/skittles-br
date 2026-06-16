@@ -1,26 +1,13 @@
-import { SKITTLE_COLOURS, type SkittleColour, type SkittleSet } from '../generators/event.js'
+import { SKITTLE_COLOURS, type SkittleSet } from '../generators/event.js'
+import { SkittleToken } from './SkittleToken.js'
 
-/** Buttons for the player to collect skittles. Each click is a request to the
- *  host, which validates and applies it (the player can't set values directly). */
-export function SkittlePanel({
-  skittles,
-  onIncrement
-}: {
-  skittles: SkittleSet
-  onIncrement: (colour: SkittleColour) => void
-}) {
+/** Your nation's current holdings. Read-only — skittles now arrive from your
+ *  starting hand and each round's allotment, not by tapping. */
+export function SkittlePanel({ skittles }: { skittles: SkittleSet }) {
   return (
     <div className="skittle-panel">
       {SKITTLE_COLOURS.map((colour) => (
-        <button
-          key={colour}
-          className={`skittle-btn skittle-btn--${colour}`}
-          aria-label={`${colour}: ${skittles[colour]}`}
-          onClick={() => onIncrement(colour)}
-        >
-          <span className="skittle__dot" />
-          {skittles[colour]}
-        </button>
+        <SkittleToken key={colour} colour={colour} count={skittles[colour]} />
       ))}
     </div>
   )

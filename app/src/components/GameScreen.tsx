@@ -150,8 +150,8 @@ export function GameScreen({
           ) : (
             self.skittles && (
               <>
-                <h2>Collect skittles</h2>
-                <SkittlePanel skittles={self.skittles} onIncrement={game.incrementSkittle} />
+                <h2>Your skittles</h2>
+                <SkittlePanel skittles={self.skittles} />
               </>
             )
           )}

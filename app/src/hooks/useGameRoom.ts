@@ -12,11 +12,17 @@ import {
 } from '../game/state.js'
 import type { GameAction, GameState, Role } from '../game/types.js'
 import type { Transfer } from '../game/contracts.js'
-import type { GameEvent, SkittleColour, SkittleSet } from '../generators/event.js'
+import type { GameEvent, SkittleSet } from '../generators/event.js'
 
 /** Test/scripting hook: force the next event the host triggers, if set. */
 function forcedEvent(): GameEvent | undefined {
   return (globalThis as { __SKITTLES_FORCE_EVENT__?: GameEvent }).__SKITTLES_FORCE_EVENT__
+}
+
+/** Test/scripting hook: force the starting hand and each round's allotment to a
+ *  fixed set, so headless/e2e flows have deterministic holdings. */
+function forcedHand(): SkittleSet | undefined {
+  return (globalThis as { __SKITTLES_FORCE_HAND__?: SkittleSet }).__SKITTLES_FORCE_HAND__
 }
 import { encryptBackup } from '../game/crypto/backup.js'
 import {
@@ -60,7 +66,6 @@ export interface GameRoomApi {
   connected: boolean
   isHost: boolean
   canStart: boolean
-  incrementSkittle: (colour: SkittleColour) => void
   start: () => void
   reset: () => void
   triggerEvent: () => void
@@ -323,10 +328,9 @@ export function useGameRoom(roomCode: string, role: Role): GameRoomApi {
     connected,
     isHost,
     canStart: isHost && state ? canStartGame(state) : false,
-    incrementSkittle: useCallback((colour: SkittleColour) => dispatch({ type: 'incrementSkittle', colour }), [dispatch]),
-    start: useCallback(() => dispatch({ type: 'start' }), [dispatch]),
+    start: useCallback(() => dispatch({ type: 'start', hands: forcedHand() }), [dispatch]),
     reset: useCallback(() => dispatch({ type: 'reset' }), [dispatch]),
-    triggerEvent: useCallback(() => dispatch({ type: 'triggerEvent', event: forcedEvent() }), [dispatch]),
+    triggerEvent: useCallback(() => dispatch({ type: 'triggerEvent', event: forcedEvent(), allotment: forcedHand() }), [dispatch]),
     setEventDuration: useCallback((seconds: number) => dispatch({ type: 'setEventDuration', seconds }), [dispatch]),
     setRounds: useCallback((rounds: number) => dispatch({ type: 'setRounds', rounds }), [dispatch]),
     setVisibility: useCallback((hideNonNeighbours: boolean) => dispatch({ type: 'setVisibility', hideNonNeighbours }), [dispatch]),

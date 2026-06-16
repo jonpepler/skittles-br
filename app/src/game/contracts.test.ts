@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { addPlayer, applyAction, createGame, resolveEvent } from './state.js'
+import { addPlayer, applyAction, createGame, emptySkittles, resolveEvent } from './state.js'
 import { evalAmount } from './contracts.js'
 import type { GameState } from './types.js'
 import type { SkittleSet } from '../generators/event.js'
@@ -17,7 +17,8 @@ const set = (partial: Partial<SkittleSet>): SkittleSet => ({
 
 function activeWith(...ids: string[]): GameState {
   const lobby = ids.reduce((s, id) => addPlayer(s, id), createGame(ROOM, ids[0] ?? 'a'))
-  return applyAction(lobby, ids[0]!, { type: 'start' })
+  // Force an empty starting hand so tests set up holdings explicitly.
+  return applyAction(lobby, ids[0]!, { type: 'start', hands: emptySkittles() })
 }
 
 function give(state: GameState, id: string, skittles: SkittleSet): GameState {
@@ -149,7 +150,7 @@ describe('contracts — recurring (the "cover my event reds" example)', () => {
     expect(game.contracts).toHaveLength(1) // recurring clause keeps it alive
 
     // First event: A transfers B exactly the reds the event requires.
-    game = applyAction(game, 'a', { type: 'triggerEvent' }, 1000)
+    game = applyAction(game, 'a', { type: 'triggerEvent', allotment: emptySkittles() }, 1000)
     const required = game.event!.requirement.red
     expect(game.players['b']!.skittles!.red).toBe(required)
     expect(game.players['a']!.skittles!.red).toBe(14 - required)
@@ -170,9 +171,9 @@ describe('contracts — recurring (the "cover my event reds" example)', () => {
     })
     const id = game.contracts[0]!.id
     game = applyAction(game, 'b', { type: 'signContract', contractId: id })
-    game = applyAction(game, 'a', { type: 'triggerEvent' }, 1000) // round 1: fires + still live
+    game = applyAction(game, 'a', { type: 'triggerEvent', allotment: emptySkittles() }, 1000) // round 1: fires + still live
     expect(game.contracts).toHaveLength(1)
-    game = applyAction(game, 'a', { type: 'triggerEvent' }, 2000) // round 2 > expiry: dropped
+    game = applyAction(game, 'a', { type: 'triggerEvent', allotment: emptySkittles() }, 2000) // round 2 > expiry: dropped
     expect(game.contracts).toHaveLength(0)
   })
 })
@@ -444,7 +445,7 @@ describe('contracts — unpaid recurring clause', () => {
     const id = game.contracts[0]!.id
     game = applyAction(game, 'b', { type: 'signContract', contractId: id })
 
-    game = applyAction(game, 'a', { type: 'triggerEvent' }, 1000)
+    game = applyAction(game, 'a', { type: 'triggerEvent', allotment: emptySkittles() }, 1000)
     const contract = game.contracts.find((c) => c.id === id)!
     expect(contract.unpaid).toBe(true) // a couldn't pay; flagged, not punished
     expect(game.players['a']!.out).toBe(false) // no automatic penalty

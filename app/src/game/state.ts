@@ -12,6 +12,7 @@ import { SKITTLE_COLOURS, type SkittleSet } from '../generators/event.js'
 import {
   addSkittles,
   canAfford,
+  dealSkittles,
   emptySkittles,
   isValidSet,
   subSkittles
@@ -296,21 +297,16 @@ export function applyAction(
   now: number = Date.now()
 ): GameState {
   switch (action.type) {
-    case 'incrementSkittle': {
-      if (state.phase !== 'active') return state
-      const player = state.players[senderId]
-      if (player?.out || !isValidSet(player?.skittles)) return state
-      if (!SKITTLE_COLOURS.includes(action.colour)) return state
-      const colour = action.colour
-      return withSkittles(state, senderId, {
-        ...player!.skittles!,
-        [colour]: player!.skittles![colour] + 1
-      })
-    }
     case 'start': {
       if (senderId !== state.hostId) return state
       if (!canStart(state)) return state
-      return { ...state, phase: 'active' }
+      // Deal each nation an unequal starting hand — the game is not fair.
+      const players: Record<string, PlayerState> = {}
+      for (const [id, p] of Object.entries(state.players)) {
+        const hand = action.hands ?? dealSkittles(`${state.roomCode}:${id}:hand`, 8, 16)
+        players[id] = { ...p, skittles: hand }
+      }
+      return { ...state, phase: 'active', players }
     }
     case 'setEventDuration': {
       if (senderId !== state.hostId) return state
@@ -338,8 +334,21 @@ export function applyAction(
       // available for future scripted events); only the host can, as ever.
       const scale = playerCount(state) + Math.floor(richestWealth(state) / 6)
       const event = action.event ?? generateEvent(scale, `${state.roomCode}:event:${round}`)
+      // Each living nation draws an unequal allotment this round (the recurring
+      // "resource schedule"). This is the primary income now that there's no
+      // tapping; it tops up holdings before the event is faced.
+      const players: Record<string, PlayerState> = {}
+      for (const [id, p] of Object.entries(state.players)) {
+        if (p.out || !isValidSet(p.skittles)) {
+          players[id] = p
+          continue
+        }
+        const allot = action.allotment ?? dealSkittles(`${state.roomCode}:allot:${round}:${id}`, 4, 10)
+        players[id] = { ...p, skittles: addSkittles(p.skittles, allot) }
+      }
       const revealed: GameState = {
         ...state,
+        players,
         round,
         event,
         eventEndsAt: now + state.eventDuration * 1000

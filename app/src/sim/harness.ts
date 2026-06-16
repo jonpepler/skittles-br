@@ -7,9 +7,9 @@
  * (already structured) event log plus the final state. Everything keys off a
  * seed, so a given (seed, config) reproduces a game exactly.
  *
- * Note: this runs against the *current* engine (collect-by-action economy). It
- * exists to prove the loop and the metrics before the redesigned Event/Tech/
- * Battle mechanics land; the bot seam (`Policy`) is the same one those will use.
+ * The economy is the starting-hand + per-round-allotment model (no tapping);
+ * the redesigned Event-queue/Tech/Battle mechanics will layer on top, and the
+ * bot seam (`Policy`) is the same one those will use.
  */
 import { Rng } from '../lib/rng.js'
 import { SKITTLE_COLOURS, type SkittleColour, type SkittleSet } from '../generators/event.js'
@@ -64,15 +64,8 @@ export function runGame(seed: string, cfg: GameConfig): GameResult {
 
   let now = 0
   while (s.phase === 'active') {
-    // Collect.
-    for (const id of seats) {
-      if (!alive(id)) continue
-      const want = policyOf(id).collect(redactStateFor(s, id), id, rng)
-      for (const c of COLS) for (let k = 0; k < want[c]; k++) {
-        s = applyAction(s, id, { type: 'incrementSkittle', colour: c })
-      }
-    }
-    // Propose gifts, then accept any addressed to you.
+    // Income arrives automatically via the round's allotment (below). Bots only
+    // make social moves: propose gifts, then accept any addressed to you.
     for (const id of seats) {
       if (!alive(id)) continue
       const gift = policyOf(id).aid(redactStateFor(s, id), id, rng)
@@ -184,7 +177,7 @@ file only changes when the engine or bots change, so its git history is the
 balance experiment log. Tunes the economy's physics, not the game's politics._
 
 - **Games:** ${m.games} (${m.players} bots each, up to ${m.rounds} rounds)
-- **Engine:** current collect-by-action economy (pre-redesign)
+- **Economy:** random starting hand + per-round allotment (no tapping)
 
 | Metric | Value |
 |---|---|

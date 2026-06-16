@@ -1,4 +1,4 @@
-import type { GameEvent, SkittleColour, SkittleSet } from '../generators/event.js'
+import type { GameEvent, SkittleSet } from '../generators/event.js'
 import type { Contract, Transfer } from './contracts.js'
 
 /** Which side of the connection a client is playing. */
@@ -84,12 +84,11 @@ export type GameState = {
  * validates every action before applying it.
  */
 export type GameAction =
-  | { type: 'incrementSkittle'; colour: SkittleColour }
-  | { type: 'start' }
+  | { type: 'start'; hands?: SkittleSet }
   | { type: 'setEventDuration'; seconds: number }
   | { type: 'setRounds'; rounds: number }
   | { type: 'setVisibility'; hideNonNeighbours: boolean }
-  | { type: 'triggerEvent'; event?: GameEvent }
+  | { type: 'triggerEvent'; event?: GameEvent; allotment?: SkittleSet }
   | { type: 'resolveEvent' }
   | { type: 'proposeTrade'; to: string; give: SkittleSet; receive: SkittleSet }
   | { type: 'acceptTrade'; offerId: string }

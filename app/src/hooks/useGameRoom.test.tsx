@@ -59,7 +59,7 @@ describe('App end-to-end (fake transport)', () => {
     window.history.replaceState(null, '', '/')
   })
 
-  it('hosts a game from create through to collecting a skittle', async () => {
+  it('hosts a game from create through to triggering an event', async () => {
     const user = userEvent.setup()
     render(<App />)
 
@@ -76,15 +76,11 @@ describe('App end-to-end (fake transport)', () => {
     expect(startBtn).toBeEnabled()
     expect(lastBroadcast().players['GUEST']).toBeDefined()
 
-    // Start the game.
+    // Start the game — nations are dealt a starting hand.
     await user.click(startBtn)
-    expect(screen.getByRole('heading', { name: 'Collect skittles' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Your skittles' })).toBeInTheDocument()
     expect(lastBroadcast().phase).toBe('active')
-
-    // Collect a green skittle — host applies it and rebroadcasts.
-    await user.click(screen.getByRole('button', { name: /green: 0/ }))
-    expect(lastBroadcast().players['HOST']!.skittles!.green).toBe(1)
-    expect(screen.getByRole('button', { name: /green: 1/ })).toBeInTheDocument()
+    expect(lastBroadcast().players['HOST']!.skittles).not.toBeNull()
 
     // Host triggers an event, which the generator produces and broadcasts.
     await user.click(screen.getByRole('button', { name: 'Trigger first event' }))
@@ -99,24 +95,29 @@ describe('App end-to-end (fake transport)', () => {
     act(() => h.room.handlers.onPeerJoin!('GUEST' as never))
     await user.click(await screen.findByRole('button', { name: 'Start game' }))
 
+    const propose = (parties: string[]) => ({
+      type: 'proposeContract' as const,
+      parties,
+      onSign: [],
+      onEvent: [],
+      onReceive: [],
+      onEliminate: [],
+      onDefault: [],
+      expiresRound: null
+    })
+
     // A spoofed action from someone who never joined must not change state.
     act(() =>
-      (h.room.handlers.onAction as (a: unknown, p: string) => void)!(
-        { type: 'incrementSkittle', colour: 'red' },
-        'INTRUDER'
-      )
+      (h.room.handlers.onAction as (a: unknown, p: string) => void)!(propose(['INTRUDER', 'HOST']), 'INTRUDER')
     )
-    const state = lastBroadcast()
-    expect(state.players['INTRUDER']).toBeUndefined()
+    expect(lastBroadcast().players['INTRUDER']).toBeUndefined()
+    expect(lastBroadcast().contracts).toHaveLength(0)
 
     // A legitimate action from the joined guest is applied.
     act(() =>
-      (h.room.handlers.onAction as (a: unknown, p: string) => void)!(
-        { type: 'incrementSkittle', colour: 'red' },
-        'GUEST'
-      )
+      (h.room.handlers.onAction as (a: unknown, p: string) => void)!(propose(['GUEST', 'HOST']), 'GUEST')
     )
-    expect(lastBroadcast().players['GUEST']!.skittles!.red).toBe(1)
+    expect(lastBroadcast().contracts).toHaveLength(1)
   })
 })
 
