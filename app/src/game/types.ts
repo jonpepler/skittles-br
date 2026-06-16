@@ -34,6 +34,7 @@ export type LogBody =
   | { kind: 'eliminated'; player: string }
   | { kind: 'event'; player: string; paid: SkittleSet; gained: SkittleSet }
   | { kind: 'transfer'; from: string; to: string; skittles: SkittleSet }
+  | { kind: 'local'; player: string; gained: SkittleSet; note: string }
 
 export type LogEntry = LogBody & { id: number; round: number }
 

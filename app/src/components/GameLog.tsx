@@ -57,6 +57,11 @@ export function GameLog({
                   {who(e.from)} gave {who(e.to)} <Skittles set={e.skittles} />
                 </>
               )}
+              {e.kind === 'local' && (
+                <>
+                  {who(e.player)} — {e.note} <Skittles set={e.gained} />
+                </>
+              )}
             </span>
           </li>
         ))}

@@ -8,7 +8,7 @@
  */
 import { generateName } from '../generators/name.js'
 import { generateEvent } from '../generators/event.js'
-import { SKITTLE_COLOURS, type SkittleSet } from '../generators/event.js'
+import { SKITTLE_COLOURS, type SkittleColour, type SkittleSet } from '../generators/event.js'
 import {
   addSkittles,
   canAfford,
@@ -62,6 +62,20 @@ function appendLog(state: GameState, bodies: LogBody[]): GameState {
 /** Turn concrete contract/trade movements into transfer log bodies. */
 function movesToLog(moves: Move[]): LogBody[] {
   return moves.map((m) => ({ kind: 'transfer', from: m.from, to: m.to, skittles: m.skittles }))
+}
+
+const LOCAL_FLAVOUR: Record<SkittleColour, string> = {
+  red: 'Your population swells.',
+  orange: 'The workshops hum.',
+  yellow: 'The coffers overflow.',
+  purple: 'A flash of invention.',
+  green: 'An abundant harvest.'
+}
+
+/** A themed line for a round's allotment, from its most-gained colour. */
+function localFlavour(gained: SkittleSet): string {
+  const best = SKITTLE_COLOURS.reduce((a, c) => (gained[c] > gained[a] ? c : a), SKITTLE_COLOURS[0])
+  return gained[best] === 0 ? 'A quiet season passes.' : LOCAL_FLAVOUR[best]
 }
 
 /** Deterministic seed for a player's flag and civ name. */
@@ -166,7 +180,7 @@ export function redactStateFor(state: GameState, viewerId: string): GameState {
   // shown only when the viewer can see a player they involve.
   const log = state.log.filter((e) => {
     if (e.kind === 'eliminated') return true
-    if (e.kind === 'event') return visible.has(e.player)
+    if (e.kind === 'event' || e.kind === 'local') return visible.has(e.player)
     return visible.has(e.from) || visible.has(e.to)
   })
   return { ...state, players, offers, contracts, log }
@@ -339,6 +353,7 @@ export function applyAction(
       // "resource schedule"). This is the primary income now that there's no
       // tapping; it tops up holdings before the event is faced.
       const players: Record<string, PlayerState> = {}
+      const localBodies: LogBody[] = []
       for (const [id, p] of Object.entries(state.players)) {
         if (p.out || !isValidSet(p.skittles)) {
           players[id] = p
@@ -346,6 +361,9 @@ export function applyAction(
         }
         const allot = action.allotment ?? dealSkittles(`${state.roomCode}:allot:${round}:${id}`, 4, 10)
         players[id] = { ...p, skittles: addSkittles(p.skittles, allot) }
+        if (SKITTLE_COLOURS.some((c) => allot[c] > 0)) {
+          localBodies.push({ kind: 'local', player: id, gained: allot, note: localFlavour(allot) })
+        }
       }
       const revealed: GameState = {
         ...state,
@@ -355,11 +373,11 @@ export function applyAction(
         eventEndsAt: now + state.eventDuration * 1000
       }
       // Fire recurring contract clauses against the new event, react to the
-      // resulting gains, then expire — logging every skittle movement.
+      // resulting gains, then expire — logging the allotment and every move.
       const moves: Move[] = []
       const fired = fireOnEvent(revealed, event, moves)
       const reacted = fireReceives(fired, diffGains(revealed, fired), 0, moves)
-      return expireContracts(appendLog(reacted, movesToLog(moves)))
+      return expireContracts(appendLog(reacted, [...localBodies, ...movesToLog(moves)]))
     }
     case 'resolveEvent': {
       if (senderId !== state.hostId) return state

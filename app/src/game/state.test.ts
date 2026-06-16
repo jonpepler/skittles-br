@@ -130,6 +130,9 @@ describe('applyAction — authority and validation', () => {
     const next = applyAction(active, 'host', { type: 'triggerEvent', allotment: set({ red: 3 }) })
     expect(next.players['p2']!.skittles!.red).toBe(before + 3)
     expect(next.players['host']!.skittles!.red).toBe(active.players['host']!.skittles!.red + 3)
+    // The allotment is chronicled as a narrated Local Event.
+    const local = next.log.find((e) => e.kind === 'local' && e.player === 'p2')
+    expect(local).toMatchObject({ kind: 'local', gained: set({ red: 3 }), note: 'Your population swells.' })
   })
 
   it('reset returns to lobby, zeroes skittles and clears the event (host only)', () => {
