@@ -22,6 +22,7 @@ test.describe('contract/trade UI', () => {
 
     await host.locator('.player-card').nth(2).waitFor({ timeout: 15_000 })
     await host.getByRole('button', { name: 'Start game' }).click()
+    await host.getByRole('button', { name: 'Begin' }).click() // dismiss the start splash
     await host.getByRole('heading', { name: 'Collect skittles' }).waitFor()
 
     const contracts = host.locator('.contracts')

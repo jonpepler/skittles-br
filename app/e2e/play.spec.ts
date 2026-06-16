@@ -41,6 +41,7 @@ test.describe('cross-peer gameplay', () => {
     const { host, guest, close } = await startGame(browser)
     await host.locator('.game__duration').fill('5') // shortest allowed window
     await host.getByRole('button', { name: 'Start game' }).click()
+    await host.getByRole('button', { name: 'Begin' }).click() // dismiss the start splash
     await host.getByRole('heading', { name: 'Collect skittles' }).waitFor()
 
     await host.getByRole('button', { name: 'Trigger first event' }).click()
@@ -59,6 +60,7 @@ test.describe('cross-peer gameplay', () => {
   test('a contract is negotiated back and forth, then executes', async ({ browser }) => {
     const { host, guest, close } = await startGame(browser)
     await host.getByRole('button', { name: 'Start game' }).click()
+    await host.getByRole('button', { name: 'Begin' }).click() // dismiss the start splash
     await host.getByRole('heading', { name: 'Collect skittles' }).waitFor()
 
     // Host stocks up so it can honour the contract.
@@ -69,6 +71,7 @@ test.describe('cross-peer gameplay', () => {
     await host.getByRole('button', { name: 'Propose contract' }).click()
 
     // Guest counters it down to 1 red.
+    await guest.getByRole('button', { name: 'Begin' }).click() // dismiss the start splash
     await guest.locator('.contracts__item').getByRole('button', { name: 'Counter' }).click()
     const counter = guest.locator('.contracts__item .editor')
     await counter.getByLabel('red amount').fill('1')
@@ -104,6 +107,7 @@ test.describe('cross-peer gameplay', () => {
     const { host, guest, close } = await startGame(browser, famine)
     await host.locator('.game__duration').fill('5')
     await host.getByRole('button', { name: 'Start game' }).click()
+    await host.getByRole('button', { name: 'Begin' }).click() // dismiss the start splash
     await host.getByRole('heading', { name: 'Collect skittles' }).waitFor()
 
     await collect(host, 'red', 3) // red to hand over; no orange to pay the gate
@@ -112,6 +116,7 @@ test.describe('cross-peer gameplay', () => {
     await host.getByLabel('When').selectOption('eliminate')
     await host.getByLabel('amount kind').selectOption('all')
     await host.getByRole('button', { name: 'Propose contract' }).click()
+    await guest.getByRole('button', { name: 'Begin' }).click() // dismiss the start splash
     await guest.locator('.contracts__item').getByRole('button', { name: 'Sign' }).click()
 
     await host.getByRole('button', { name: 'Trigger first event' }).click()
@@ -127,8 +132,10 @@ test.describe('cross-peer gameplay', () => {
   test('a direct two-way trade swaps skittles when accepted', async ({ browser }) => {
     const { host, guest, close } = await startGame(browser)
     await host.getByRole('button', { name: 'Start game' }).click()
+    await host.getByRole('button', { name: 'Begin' }).click() // dismiss the start splash
     await host.getByRole('heading', { name: 'Collect skittles' }).waitFor()
 
+    await guest.getByRole('button', { name: 'Begin' }).click() // dismiss the start splash
     await collect(host, 'red', 2)
     await collect(guest, 'green', 1)
 

@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useGameRoom } from '../hooks/useGameRoom.js'
-import type { Role } from '../game/types.js'
+import type { Phase, Role } from '../game/types.js'
 import { MIN_PLAYERS } from '../game/state.js'
 import { PlayerCard } from './PlayerCard.js'
 import { FactionTitle } from './FactionTitle.js'
@@ -10,6 +10,7 @@ import { ShareInvite } from './ShareInvite.js'
 import { TradePanel } from './TradePanel.js'
 import { ContractsPanel } from './ContractsPanel.js'
 import { GameLog } from './GameLog.js'
+import { StartSplash } from './StartSplash.js'
 
 const LENGTHS = [
   ['Short', 20],
@@ -72,6 +73,17 @@ export function GameScreen({
   const players = state ? Object.values(state.players) : []
   const self = selfId && state ? state.players[selfId] : undefined
   const survivors = players.filter((p) => !p.out)
+
+  // Show the cold-open once, when the game transitions from lobby to active
+  // (not when joining/reconnecting into an already-running game).
+  const [showSplash, setShowSplash] = useState(false)
+  const prevPhase = useRef<Phase | undefined>(undefined)
+  useEffect(() => {
+    const phase = state?.phase
+    if (phase === 'active' && prevPhase.current === 'lobby') setShowSplash(true)
+    if (phase === 'lobby' || phase === 'complete') setShowSplash(false)
+    prevPhase.current = phase
+  }, [state?.phase])
 
   return (
     <div className="game">
@@ -219,6 +231,16 @@ export function GameScreen({
 
       {state && state.phase !== 'lobby' && (
         <GameLog log={state.log} players={state.players} selfId={selfId} />
+      )}
+
+      {showSplash && self && (
+        <StartSplash
+          self={{ seed: self.flagSeed, name: self.name }}
+          opponents={players
+            .filter((p) => p.id !== selfId)
+            .map((p) => ({ seed: p.flagSeed, name: p.name }))}
+          onDismiss={() => setShowSplash(false)}
+        />
       )}
     </div>
   )
