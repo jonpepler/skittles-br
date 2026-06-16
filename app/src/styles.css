@@ -714,6 +714,10 @@ input.chip {
   width: 3.4rem;
   text-align: center;
   -moz-appearance: textfield;
+  border-style: dashed;
+  border-radius: 10px;
+  font-weight: 800;
+  box-shadow: var(--shadow);
 }
 .chip--num::-webkit-outer-spin-button,
 .chip--num::-webkit-inner-spin-button {
