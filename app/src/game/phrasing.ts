@@ -50,8 +50,8 @@ function joinList(parts: PhraseToken[][]): PhraseToken[] {
 function amountTokens(
   expr: AmountExpr,
   colourCtx: SkittleColour,
-  possessive: string,
-  subjective: string
+  possessive: PhraseToken[],
+  subjective: PhraseToken[]
 ): PhraseToken[] {
   if (typeof expr === 'number') {
     // Colour is a mass noun here ("3 red", not "3 reds"); the colour token
@@ -59,13 +59,13 @@ function amountTokens(
     return [text(`${expr} `), colour(colourCtx)]
   }
   if ('all' in expr) {
-    return [text(`all ${possessive} `), colour(expr.all)]
+    return [text('all '), ...possessive, text(' '), colour(expr.all)]
   }
   if ('eventReq' in expr) {
     return [text('the required '), colour(expr.eventReq)]
   }
   if ('received' in expr) {
-    return [text('the '), colour(expr.received), text(` ${subjective} received`)]
+    return [text('the '), colour(expr.received), text(' '), ...subjective, text(' received')]
   }
   if ('percent' in expr) {
     return [text(`${expr.percent}% of `), ...amountTokens(expr.of, colourCtx, possessive, subjective)]
@@ -93,7 +93,7 @@ function isZero(expr: AmountExpr): boolean {
 }
 
 /** Phrase the "give" half: the colours and amounts being handed over. */
-function giveTokens(give: GiveSpec, possessive: string, subjective: string): PhraseToken[] {
+function giveTokens(give: GiveSpec, possessive: PhraseToken[], subjective: PhraseToken[]): PhraseToken[] {
   const parts: PhraseToken[][] = []
   for (const c of SKITTLE_COLOURS) {
     const expr = give[c]
@@ -111,8 +111,23 @@ function giveTokens(give: GiveSpec, possessive: string, subjective: string): Phr
 export function statementTokens(s: SummaryStatement, viewerId: string): PhraseToken[] {
   const fromIsViewer = s.from === viewerId
   const toIsViewer = s.to === viewerId
-  const possessive = fromIsViewer ? 'your' : 'their'
-  const subjective = fromIsViewer ? 'you' : 'they'
+
+  // Possessive/subjective for the giver. "your/you" when the viewer gives;
+  // "their/they" when one other party gives (unambiguous, as the viewer is the
+  // other party). In a clause between two *other* parties — only possible in a
+  // 3+ party contract — name the giver so "their" can't be misread.
+  let possessive: PhraseToken[]
+  let subjective: PhraseToken[]
+  if (fromIsViewer) {
+    possessive = [text('your')]
+    subjective = [text('you')]
+  } else if (toIsViewer) {
+    possessive = [text('their')]
+    subjective = [text('they')]
+  } else {
+    possessive = [text('of '), faction(s.from), text("'s")]
+    subjective = [faction(s.from)]
+  }
 
   const give = giveTokens(s.give, possessive, subjective)
 

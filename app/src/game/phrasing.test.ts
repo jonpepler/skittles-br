@@ -41,7 +41,7 @@ describe('phraseStatement — triggers', () => {
   it('onReceive, third party', () => {
     const g: GiveSpec = { red: { percent: 50, of: { received: 'red' } } }
     expect(phrase({ trigger: 'onReceive', from: 'alice', to: 'bob', give: g }, 'me')).toBe(
-      'Each time Alice receives skittles, Alice gives Bob 50% of the red they received.'
+      'Each time Alice receives skittles, Alice gives Bob 50% of the red Alice received.'
     )
   })
 
@@ -89,7 +89,7 @@ describe('phraseStatement — amounts', () => {
 
   it('all their colour, with viewer possessive', () => {
     expect(phrase({ ...base, give: { green: { all: 'green' } } }, 'me')).toBe(
-      'On signing, Alice gives Bob all their green.'
+      "On signing, Alice gives Bob all of Alice's green."
     )
     expect(phrase({ trigger: 'onSign', from: 'me', to: 'bob', give: { green: { all: 'green' } } })).toBe(
       'On signing, you give Bob all your green.'
@@ -104,7 +104,7 @@ describe('phraseStatement — amounts', () => {
 
   it('the colour they/you received', () => {
     expect(phrase({ ...base, give: { red: { received: 'red' } } }, 'me')).toBe(
-      'On signing, Alice gives Bob the red they received.'
+      'On signing, Alice gives Bob the red Alice received.'
     )
     expect(phrase({ trigger: 'onSign', from: 'me', to: 'bob', give: { red: { received: 'red' } } })).toBe(
       'On signing, you give Bob the red you received.'
@@ -114,28 +114,28 @@ describe('phraseStatement — amounts', () => {
   it('percentage of a base, no doubled parentheses', () => {
     const g: GiveSpec = { red: { percent: 25, of: { all: 'red' } } }
     expect(phrase({ ...base, give: g }, 'me')).toBe(
-      'On signing, Alice gives Bob 25% of all their red.'
+      "On signing, Alice gives Bob 25% of all of Alice's red."
     )
   })
 
   it('min of two reads as a cap: "A, but at most B"', () => {
     const g: GiveSpec = { red: { min: [{ all: 'red' }, 1] } }
     expect(phrase({ ...base, give: g }, 'me')).toBe(
-      'On signing, Alice gives Bob all their red, but at most 1 red.'
+      "On signing, Alice gives Bob all of Alice's red, but at most 1 red."
     )
   })
 
   it('min of three: "the smallest of A, B and C"', () => {
     const g: GiveSpec = { red: { min: [{ all: 'red' }, 1, { eventReq: 'red' }] } }
     expect(phrase({ ...base, give: g }, 'me')).toBe(
-      'On signing, Alice gives Bob the smallest of all their red, 1 red and the required red.'
+      "On signing, Alice gives Bob the smallest of all of Alice's red, 1 red and the required red."
     )
   })
 
   it('nested sum reads with plus', () => {
     const g: GiveSpec = { red: { sum: [1, { all: 'red' }] } }
     expect(phrase({ ...base, give: g }, 'me')).toBe(
-      'On signing, Alice gives Bob 1 red plus all their red.'
+      "On signing, Alice gives Bob 1 red plus all of Alice's red."
     )
   })
 
