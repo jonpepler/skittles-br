@@ -234,7 +234,15 @@ describe('neighbours and redaction', () => {
 describe('event resolution', () => {
   const eventWith = (state: GameState, requirement: SkittleSet, reward: SkittleSet): GameState => ({
     ...state,
-    event: { name: 'E', description: '', requirement, reward, penalty: emptySkittles() }
+    event: {
+      name: 'E',
+      description: '',
+      kind: 'threat',
+      fail: 'eliminate',
+      requirement,
+      reward,
+      penalty: emptySkittles()
+    }
   })
 
   it('spends the requirement for the reward when affordable', () => {
@@ -286,6 +294,46 @@ describe('event resolution', () => {
     const resolved = resolveEvent(game)
     expect(resolved.phase).toBe('complete')
     expect(alivePlayers(resolved)).toHaveLength(0)
+  })
+
+  it('a missed opportunity does not eliminate anyone', () => {
+    let game = activeWith('a', 'b') // both broke, can't invest
+    game = {
+      ...game,
+      event: {
+        name: 'Tech',
+        description: '',
+        kind: 'opportunity',
+        fail: 'none',
+        requirement: set({ red: 2 }),
+        reward: set({ green: 3 }),
+        penalty: emptySkittles()
+      }
+    }
+    const resolved = resolveEvent(game)
+    expect(resolved.phase).toBe('active')
+    expect(resolved.players['a']!.out).toBe(false)
+    expect(resolved.players['a']!.skittles).toEqual(set({})) // no change
+  })
+
+  it('a penalty event costs skittles rather than eliminating', () => {
+    let game = activeWith('a', 'b')
+    game = giveSkittles(game, 'a', set({ green: 5 })) // can't afford the red gate
+    game = {
+      ...game,
+      event: {
+        name: 'Raid',
+        description: '',
+        kind: 'threat',
+        fail: 'penalty',
+        requirement: set({ red: 2 }),
+        reward: emptySkittles(),
+        penalty: set({ green: 3 })
+      }
+    }
+    const resolved = resolveEvent(game)
+    expect(resolved.players['a']!.out).toBe(false)
+    expect(resolved.players['a']!.skittles).toEqual(set({ green: 2 })) // lost 3 green
   })
 })
 

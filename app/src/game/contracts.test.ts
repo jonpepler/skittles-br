@@ -30,6 +30,8 @@ describe('evalAmount', () => {
     event: {
       name: 'E',
       description: '',
+      kind: 'threat' as const,
+      fail: 'eliminate' as const,
       requirement: set({ red: 3 }),
       reward: set({}),
       penalty: set({})
@@ -398,7 +400,7 @@ describe('contracts — onEliminate', () => {
     // An event that a can't pay but b and c can.
     game = {
       ...game,
-      event: { name: 'E', description: '', requirement: set({ red: 7 }), reward: set({}), penalty: set({}) }
+      event: { name: 'E', description: '', kind: 'threat', fail: 'eliminate', requirement: set({ red: 7 }), reward: set({}), penalty: set({}) }
     }
     const resolved = resolveEvent(game)
 

@@ -144,6 +144,17 @@ export function alivePlayers(state: GameState): PlayerState[] {
   return Object.values(state.players).filter((p) => !p.out)
 }
 
+/** The largest single skittle hoard held by any player (a wealth proxy). */
+export function richestWealth(state: GameState): number {
+  let richest = 0
+  for (const p of Object.values(state.players)) {
+    if (!p.skittles) continue
+    const total = SKITTLE_COLOURS.reduce((acc, c) => acc + p.skittles![c], 0)
+    if (total > richest) richest = total
+  }
+  return richest
+}
+
 /**
  * Deterministic host election: the connected peer with the lowest id wins.
  * Every peer can compute this identically, so failover needs no coordination.
@@ -189,11 +200,13 @@ function withSkittles(
  */
 export function resolveEvent(state: GameState): GameState {
   if (!state.event) return state
-  const { requirement, reward } = state.event
+  const { requirement, reward, penalty, fail } = state.event
 
-  // Players who can afford the gate spend it for the reward; the rest fail.
+  // Players who can pay the requirement spend it for the reward. Those who
+  // can't face the event's failure mode: eliminated, lose skittles, or (for an
+  // opportunity) simply miss out.
   const players: Record<string, PlayerState> = {}
-  const failed: string[] = []
+  const failed: string[] = [] // players an 'eliminate' event will knock out
   for (const [id, p] of Object.entries(state.players)) {
     if (p.out || !isValidSet(p.skittles)) {
       players[id] = p
@@ -201,9 +214,13 @@ export function resolveEvent(state: GameState): GameState {
     }
     if (canAfford(p.skittles, requirement)) {
       players[id] = { ...p, skittles: addSkittles(subSkittles(p.skittles, requirement), reward) }
-    } else {
+    } else if (fail === 'eliminate') {
       players[id] = p // still alive for now; their onEliminate clauses fire below
       failed.push(id)
+    } else if (fail === 'penalty') {
+      players[id] = { ...p, skittles: subSkittles(p.skittles, penalty) }
+    } else {
+      players[id] = p // opportunity missed; no harm
     }
   }
 
@@ -259,7 +276,7 @@ export function applyAction(
     case 'setRounds': {
       if (senderId !== state.hostId) return state
       const rounds = Math.round(action.rounds)
-      if (!Number.isFinite(rounds) || rounds < 1 || rounds > 200) return state
+      if (!Number.isFinite(rounds) || rounds < 1) return state
       return { ...state, maxRounds: rounds }
     }
     case 'setVisibility': {
@@ -270,8 +287,10 @@ export function applyAction(
       if (senderId !== state.hostId) return state
       if (state.phase !== 'active') return state
       const round = state.round + 1
-      // Deterministic per (room, round); scaled by the number of players.
-      const event = generateEvent(playerCount(state), `${state.roomCode}:event:${round}`)
+      // Escalation (and the tech era) rises with the richest player's wealth, so
+      // events grow as the game progresses. Deterministic per (room, round).
+      const scale = playerCount(state) + Math.floor(richestWealth(state) / 6)
+      const event = generateEvent(scale, `${state.roomCode}:event:${round}`)
       const revealed: GameState = {
         ...state,
         round,

@@ -61,8 +61,27 @@ describe('generateEvent', () => {
     expect(magnitudes.size).toBeGreaterThan(1)
   })
 
-  it('EXAMPLE_EVENT matches the documented Python example', () => {
-    expect(eventMagnitude(EXAMPLE_EVENT)).toBe(13)
+  it('EXAMPLE_EVENT is a well-formed event', () => {
     for (const section of sections) expectValidSet(EXAMPLE_EVENT[section])
+    expect(EXAMPLE_EVENT.kind).toBe('threat')
+    expect(EXAMPLE_EVENT.fail).toBe('eliminate')
+  })
+
+  it('tags every event with a kind and a matching failure mode', () => {
+    for (let i = 0; i < 200; i++) {
+      const e = generateEvent(2 + (i % 25), i)
+      expect(['threat', 'opportunity']).toContain(e.kind)
+      if (e.kind === 'opportunity') {
+        expect(e.fail).toBe('none') // opportunities never knock you out
+      } else {
+        expect(['eliminate', 'penalty']).toContain(e.fail)
+      }
+    }
+  })
+
+  it('produces both threats and opportunities across seeds', () => {
+    const kinds = new Set(Array.from({ length: 60 }, (_, i) => generateEvent(8, i).kind))
+    expect(kinds.has('threat')).toBe(true)
+    expect(kinds.has('opportunity')).toBe(true)
   })
 })

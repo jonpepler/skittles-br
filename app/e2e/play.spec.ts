@@ -76,35 +76,9 @@ test.describe('cross-peer gameplay', () => {
     await close()
   })
 
-  test('an onEliminate contract hands skittles over when a player is knocked out', async ({
-    browser
-  }) => {
-    const { host, guest, close } = await startGame(browser)
-    await host.locator('.game__duration').fill('5')
-    await host.getByRole('button', { name: 'Start game' }).click()
-    await host.getByRole('heading', { name: 'Collect skittles' }).waitFor()
-
-    // Host collects only red, so it will fail an event gate (which needs some
-    // of every colour) and get eliminated, with red to hand over.
-    await collect(host, 'red', 3)
-
-    // Contract: "if I'm eliminated, give you all my red."
-    await host.getByLabel('When').selectOption('eliminate')
-    await host.getByLabel('amount kind').selectOption('all')
-    await host.getByRole('button', { name: 'Propose contract' }).click()
-    await guest.locator('.contracts__item').getByRole('button', { name: 'Sign' }).click()
-
-    await host.getByRole('button', { name: 'Trigger first event' }).click()
-
-    // After the event resolves, the host is out and its red has been handed over
-    // (would still be 3 if onEliminate hadn't fired, since elimination keeps
-    // skittles).
-    const self = host.locator('.player-card--self')
-    await expect(self.getByText('OUT')).toBeVisible({ timeout: 10_000 })
-    await expect(self.locator('.skittle--red')).toContainText('0', { timeout: 10_000 })
-
-    await close()
-  })
+  // Note: onEliminate is covered by a deterministic unit test. An e2e for it
+  // would need to force a specific event kind (events are now randomly threats
+  // or opportunities), so it's intentionally not exercised here.
 
   test('a direct two-way trade swaps skittles when accepted', async ({ browser }) => {
     const { host, guest, close } = await startGame(browser)

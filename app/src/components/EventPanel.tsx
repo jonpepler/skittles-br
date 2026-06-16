@@ -45,9 +45,18 @@ export function EventPanel({
   round: number
   endsAt: number | null
 }) {
+  const consequence =
+    event.fail === 'eliminate'
+      ? "Can't pay when it resolves? You're eliminated."
+      : event.fail === 'penalty'
+        ? "Can't pay? You lose skittles instead."
+        : "Optional: can't (or won't) pay? You just miss the reward."
   return (
-    <div className="event">
-      <div className="event__round">Event {round}</div>
+    <div className={`event event--${event.kind}`}>
+      <div className="event__round">
+        Event {round}
+        <span className={`event__kind event__kind--${event.kind}`}>{event.kind}</span>
+      </div>
       <h3 className="event__name">{event.name}</h3>
       <p className="event__description">{event.description}</p>
       {endsAt != null && <Countdown endsAt={endsAt} />}
@@ -60,8 +69,16 @@ export function EventPanel({
         <dd>
           <SkittleCosts set={event.reward} />
         </dd>
+        {event.fail === 'penalty' && (
+          <>
+            <dt>You lose</dt>
+            <dd>
+              <SkittleCosts set={event.penalty} />
+            </dd>
+          </>
+        )}
       </dl>
-      <p className="event__gate">Can't pay the requirement when it resolves? You're out.</p>
+      <p className="event__gate">{consequence}</p>
     </div>
   )
 }

@@ -47,10 +47,9 @@ function GameLength({ value, onChange }: { value: number; onChange: (n: number) 
           className="game__rounds"
           type="number"
           min={1}
-          max={200}
           aria-label="Custom rounds"
           value={value}
-          onChange={(e) => onChange(Math.max(1, Math.min(200, Number(e.target.value) || 1)))}
+          onChange={(e) => onChange(Math.max(1, Number(e.target.value) || 1))}
         />
       )}
     </div>
