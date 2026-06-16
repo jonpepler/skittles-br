@@ -41,14 +41,14 @@ describe('phraseStatement — triggers', () => {
   it('onReceive, third party', () => {
     const g: GiveSpec = { red: { percent: 50, of: { received: 'red' } } }
     expect(phrase({ trigger: 'onReceive', from: 'alice', to: 'bob', give: g }, 'me')).toBe(
-      'Each time Alice receives red, Alice gives Bob 50% of the red they received.'
+      'Each time Alice receives skittles, Alice gives Bob 50% of the red they received.'
     )
   })
 
   it('onReceive, viewer is the receiver (subject/verb agreement)', () => {
     const g: GiveSpec = { red: { percent: 50, of: { received: 'red' } } }
     expect(phrase({ trigger: 'onReceive', from: 'me', to: 'bob', give: g })).toBe(
-      'Each time you receive red, you give Bob 50% of the red you received.'
+      'Each time you receive skittles, you give Bob 50% of the red you received.'
     )
   })
 

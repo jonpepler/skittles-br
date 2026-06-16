@@ -13,7 +13,7 @@
  */
 import { SKITTLE_COLOURS, type SkittleColour } from '../generators/event.js'
 import type { AmountExpr, GiveSpec } from './contracts.js'
-import { receivedColour, type SummaryStatement } from './summary.js'
+import { type SummaryStatement } from './summary.js'
 
 /** A piece of a phrased sentence. */
 export type PhraseToken =
@@ -138,12 +138,10 @@ export function statementTokens(s: SummaryStatement, viewerId: string): PhraseTo
     case 'onEvent':
       return [when('Each event'), text(', '), ...tail]
     case 'onReceive': {
-      const rc = receivedColour(s.give)
+      // The clause fires on *any* receipt; the colour only scopes the amount
+      // ("the red you received"), so it must not appear in the trigger.
       const verb = fromIsViewer ? 'receive' : 'receives'
-      const lead: PhraseToken[] = [when('Each time'), text(' '), ...subject, text(` ${verb}`)]
-      if (rc) lead.push(text(' '), colour(rc))
-      lead.push(text(', '))
-      return [...lead, ...tail]
+      return [when('Each time'), text(' '), ...subject, text(` ${verb} skittles, `), ...tail]
     }
     case 'onEliminate': {
       const verb = fromIsViewer ? 'are' : 'is'
