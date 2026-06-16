@@ -37,9 +37,9 @@ export function StartSplash({
         </div>
 
         <p className="splash__message">
-          This game is <span className="splash__hl splash__hl--red">not fair</span>.
+          This game is not fair.
           <br />
-          Your goal is to <span className="splash__hl splash__hl--green">survive</span>.
+          Your goal is to survive.
         </p>
 
         <button type="button" className="btn btn--large splash__begin" onClick={onDismiss}>
