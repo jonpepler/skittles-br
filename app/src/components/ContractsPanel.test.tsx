@@ -65,6 +65,22 @@ describe('ContractsPanel command editor', () => {
     ])
   })
 
+  it('offers "received"-based amounts only under the receive trigger', async () => {
+    renderPanel({})
+    const kind = screen.getByLabelText('amount kind')
+    // Default trigger ("when signed") hides the received-based kinds.
+    expect(within(kind).queryByRole('option', { name: 'the received' })).toBeNull()
+    expect(within(kind).queryByRole('option', { name: 'a percentage' })).toBeNull()
+
+    await userEvent.selectOptions(screen.getByLabelText('When'), 'receive')
+    expect(within(kind).queryByRole('option', { name: 'the received' })).not.toBeNull()
+
+    // Selecting percentage then leaving receive demotes it back to a count.
+    await userEvent.selectOptions(kind, 'percent')
+    await userEvent.selectOptions(screen.getByLabelText('When'), 'now')
+    expect((kind as HTMLSelectElement).value).toBe('number')
+  })
+
   it('signs an incoming contract', async () => {
     const onSign = vi.fn()
     const contract: Contract = {

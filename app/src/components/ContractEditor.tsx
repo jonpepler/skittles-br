@@ -59,6 +59,17 @@ export function ContractEditor({
   const patch = (key: string, p: Partial<ClauseDraft>): void =>
     setClauses(clauses.map((c) => (c.key === key ? { ...c, ...p } : c)))
 
+  /** Change a clause's trigger, demoting "received"-based amounts (which only
+   *  make sense on the receive trigger) back to a fixed count. */
+  const setTrigger = (key: string, trigger: Trigger): void =>
+    setClauses(
+      clauses.map((c) => {
+        if (c.key !== key) return c
+        const stale = trigger !== 'receive' && (c.amount.kind === 'received' || c.amount.kind === 'percent')
+        return { ...c, trigger, amount: stale ? { ...c.amount, kind: 'number' } : c.amount }
+      })
+    )
+
   const addParty = (): void => {
     const candidate = players.find((p) => !p.out && !parties.includes(p.id))
     if (candidate) setParties([...parties, candidate.id])
@@ -128,7 +139,7 @@ export function ContractEditor({
               className="chip chip--when"
               aria-label="When"
               value={c.trigger}
-              onChange={(e) => patch(c.key, { trigger: e.target.value as Trigger })}
+              onChange={(e) => setTrigger(c.key, e.target.value as Trigger)}
             >
               <option value="now">When signed</option>
               <option value="event">Each event</option>
@@ -151,7 +162,11 @@ export function ContractEditor({
                 onChange={(v) => patch(c.key, { to: v })}
               />
             </span>
-            <AmountChip value={c.amount} onChange={(amount) => patch(c.key, { amount })} />
+            <AmountChip
+              value={c.amount}
+              trigger={c.trigger}
+              onChange={(amount) => patch(c.key, { amount })}
+            />
           </div>
         </div>
       ))}

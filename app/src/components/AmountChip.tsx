@@ -1,5 +1,11 @@
 import { SKITTLE_COLOURS, type SkittleColour } from '../generators/event.js'
-import { selectedColours, type AmountKind, type DraftAmount, type Modifier } from './contractDraft.js'
+import {
+  selectedColours,
+  type AmountKind,
+  type DraftAmount,
+  type Modifier,
+  type Trigger
+} from './contractDraft.js'
 
 const clampPct = (n: number): number => Math.min(100, Math.max(0, Math.floor(n || 0)))
 const clampN = (n: number): number => Math.max(0, Math.floor(n || 0))
@@ -9,12 +15,17 @@ const clampN = (n: number): number => Math.max(0, Math.floor(n || 0))
  * received", "a percentage") spread across coloured unit chips that each carry
  * their own count, with an optional limit ("but at most N" / "plus N") that's
  * only shown once added.
+ *
+ * The "received"-based kinds are only offered under the `receive` trigger,
+ * since `received` evaluates to nothing in any other context.
  */
 export function AmountChip({
   value,
+  trigger,
   onChange
 }: {
   value: DraftAmount
+  trigger: Trigger
   onChange: (next: DraftAmount) => void
 }) {
   const set = (patch: Partial<DraftAmount>): void => onChange({ ...value, ...patch })
@@ -55,8 +66,8 @@ export function AmountChip({
         <option value="number">exactly</option>
         <option value="all">all their</option>
         <option value="eventReq">the required</option>
-        <option value="received">the received</option>
-        <option value="percent">a percentage</option>
+        {trigger === 'receive' && <option value="received">the received</option>}
+        {trigger === 'receive' && <option value="percent">a percentage</option>}
       </select>
 
       {value.kind === 'percent' && (
