@@ -2,7 +2,13 @@ import { describe, it, expect } from 'vitest'
 import { mergeExpr, summarise, type Buckets } from './summary.js'
 import type { Transfer } from './contracts.js'
 
-const empty: Buckets = { onSign: [], onEvent: [], onReceive: [], onEliminate: [] }
+const empty: Buckets = {
+  onSign: [],
+  onEvent: [],
+  onReceive: [],
+  onEliminate: [],
+  onDefault: []
+}
 
 describe('mergeExpr', () => {
   it('adds two literals', () => {
@@ -50,7 +56,19 @@ describe('summarise', () => {
 
   it('groups by trigger, ordering sign → event → receive', () => {
     const t: Transfer = { from: 'me', to: 'you', give: { red: 1 } }
-    const result = summarise({ onSign: [t], onEvent: [t], onReceive: [t], onEliminate: [t] })
-    expect(result.map((s) => s.trigger)).toEqual(['onSign', 'onEvent', 'onReceive', 'onEliminate'])
+    const result = summarise({
+      onSign: [t],
+      onEvent: [t],
+      onReceive: [t],
+      onEliminate: [t],
+      onDefault: [t]
+    })
+    expect(result.map((s) => s.trigger)).toEqual([
+      'onSign',
+      'onEvent',
+      'onReceive',
+      'onEliminate',
+      'onDefault'
+    ])
   })
 })

@@ -71,6 +71,7 @@ export interface GameRoomApi {
     onEvent: Transfer[],
     onReceive: Transfer[],
     onEliminate: Transfer[],
+    onDefault: Transfer[],
     expiresRound: number | null
   ) => void
   signContract: (contractId: string) => void
@@ -81,6 +82,7 @@ export interface GameRoomApi {
     onEvent: Transfer[],
     onReceive: Transfer[],
     onEliminate: Transfer[],
+    onDefault: Transfer[],
     expiresRound: number | null
   ) => void
   cancelContract: (contractId: string) => void
@@ -326,9 +328,9 @@ export function useGameRoom(roomCode: string, role: Role): GameRoomApi {
     proposeTrade: useCallback((to: string, give: SkittleSet, receive: SkittleSet) => dispatch({ type: 'proposeTrade', to, give, receive }), [dispatch]),
     acceptTrade: useCallback((offerId: string) => dispatch({ type: 'acceptTrade', offerId }), [dispatch]),
     cancelTrade: useCallback((offerId: string) => dispatch({ type: 'cancelTrade', offerId }), [dispatch]),
-    proposeContract: useCallback((parties: string[], onSign: Transfer[], onEvent: Transfer[], onReceive: Transfer[], onEliminate: Transfer[], expiresRound: number | null) => dispatch({ type: 'proposeContract', parties, onSign, onEvent, onReceive, onEliminate, expiresRound }), [dispatch]),
+    proposeContract: useCallback((parties: string[], onSign: Transfer[], onEvent: Transfer[], onReceive: Transfer[], onEliminate: Transfer[], onDefault: Transfer[], expiresRound: number | null) => dispatch({ type: 'proposeContract', parties, onSign, onEvent, onReceive, onEliminate, onDefault, expiresRound }), [dispatch]),
     signContract: useCallback((contractId: string) => dispatch({ type: 'signContract', contractId }), [dispatch]),
-    reviseContract: useCallback((contractId: string, parties: string[], onSign: Transfer[], onEvent: Transfer[], onReceive: Transfer[], onEliminate: Transfer[], expiresRound: number | null) => dispatch({ type: 'reviseContract', contractId, parties, onSign, onEvent, onReceive, onEliminate, expiresRound }), [dispatch]),
+    reviseContract: useCallback((contractId: string, parties: string[], onSign: Transfer[], onEvent: Transfer[], onReceive: Transfer[], onEliminate: Transfer[], onDefault: Transfer[], expiresRound: number | null) => dispatch({ type: 'reviseContract', contractId, parties, onSign, onEvent, onReceive, onEliminate, onDefault, expiresRound }), [dispatch]),
     cancelContract: useCallback((contractId: string) => dispatch({ type: 'cancelContract', contractId }), [dispatch])
   }
 }

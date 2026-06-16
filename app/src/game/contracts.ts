@@ -45,6 +45,9 @@ export type Contract = {
   /** Transfers applied when a party is eliminated, fired for its `from` party
    *  ("if I'm eliminated, give you my…"). Runs before the player is marked out. */
   onEliminate: Transfer[]
+  /** Transfers applied when a party can't pay a threat's requirement, fired for
+   *  its `from` party ("if I can't pay, give you my…"): collateral / insurance. */
+  onDefault: Transfer[]
   /** Round after which the contract is dropped (null = no expiry). */
   expiresRound: number | null
   /** Whether the onSign clause has already fired. */
@@ -207,6 +210,22 @@ export function fireOnEliminate(state: GameState, eliminatedId: string): GameSta
   for (const contract of state.contracts) {
     if (!allSigned(contract) || contract.onEliminate.length === 0) continue
     const transfers = contract.onEliminate.filter((t) => t.from === eliminatedId)
+    if (transfers.length === 0) continue
+    next = applyTransfers(next, transfers, next.event) ?? next
+  }
+  return next
+}
+
+/**
+ * Fire onDefault clauses for a player who couldn't pay a threat's requirement.
+ * Each clause fires for its `from` party, so "if I can't pay, you get my reds"
+ * acts as agreed collateral or insurance.
+ */
+export function fireOnDefault(state: GameState, defaulterId: string): GameState {
+  let next = state
+  for (const contract of state.contracts) {
+    if (!allSigned(contract) || contract.onDefault.length === 0) continue
+    const transfers = contract.onDefault.filter((t) => t.from === defaulterId)
     if (transfers.length === 0) continue
     next = applyTransfers(next, transfers, next.event) ?? next
   }

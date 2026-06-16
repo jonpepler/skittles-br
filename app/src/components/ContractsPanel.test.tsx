@@ -73,6 +73,7 @@ describe('ContractsPanel command editor', () => {
       onEvent: [],
       onReceive: [],
       onEliminate: [],
+      onDefault: [],
       expiresRound: null,
       unpaid: false,
       signFired: false
@@ -98,6 +99,7 @@ describe('ContractsPanel command editor', () => {
       onEvent: [],
       onReceive: [],
       onEliminate: [],
+      onDefault: [],
       expiresRound: null,
       unpaid: false,
       signFired: false

@@ -65,6 +65,7 @@ describe('contracts — sign and fire', () => {
       onEvent: [],
       onReceive: [],
       onEliminate: [],
+      onDefault: [],
       expiresRound: null
     })
     expect(game.contracts).toHaveLength(1)
@@ -91,6 +92,7 @@ describe('contracts — sign and fire', () => {
       onEvent: [],
       onReceive: [],
       onEliminate: [],
+      onDefault: [],
       expiresRound: null
     })
     const id = game.contracts[0]!.id
@@ -112,6 +114,7 @@ describe('contracts — sign and fire', () => {
       onEvent: [],
       onReceive: [],
       onEliminate: [],
+      onDefault: [],
       expiresRound: null
     })
     const id = game.contracts[0]!.id
@@ -134,6 +137,7 @@ describe('contracts — recurring (the "cover my event reds" example)', () => {
       onEvent: [{ from: 'a', to: 'b', give: { red: { eventReq: 'red' } } }],
       onReceive: [],
       onEliminate: [],
+      onDefault: [],
       expiresRound: null
     })
     const id = game.contracts[0]!.id
@@ -161,6 +165,7 @@ describe('contracts — recurring (the "cover my event reds" example)', () => {
       onEvent: [{ from: 'a', to: 'b', give: { red: 1 } }],
       onReceive: [],
       onEliminate: [],
+      onDefault: [],
       expiresRound: 1
     })
     const id = game.contracts[0]!.id
@@ -185,6 +190,7 @@ describe('contracts — onReceive (percentage cut)', () => {
       onEvent: [],
       onReceive: [{ from: 'a', to: 'b', give: { red: { percent: 50, of: { received: 'red' } } } }],
       onEliminate: [],
+      onDefault: [],
       expiresRound: null
     })
     const id = game.contracts[0]!.id
@@ -220,6 +226,7 @@ describe('contracts — onReceive (percentage cut)', () => {
         { from: 'b', to: 'a', give: { red: { percent: 50, of: { received: 'red' } } } }
       ],
       onEliminate: [],
+      onDefault: [],
       expiresRound: null
     })
     const id = game.contracts[0]!.id
@@ -250,6 +257,7 @@ describe('contracts — negotiation (revise / counter-offer)', () => {
       onEvent: [],
       onReceive: [],
       onEliminate: [],
+      onDefault: [],
       expiresRound: null
     })
   }
@@ -269,6 +277,7 @@ describe('contracts — negotiation (revise / counter-offer)', () => {
       onEvent: [],
       onReceive: [],
       onEliminate: [],
+      onDefault: [],
       expiresRound: null
     })
     const c = countered.contracts[0]!
@@ -290,6 +299,7 @@ describe('contracts — negotiation (revise / counter-offer)', () => {
       onEvent: [],
       onReceive: [],
       onEliminate: [],
+      onDefault: [],
       expiresRound: null
     })
     // a agrees to b's counter.
@@ -308,6 +318,7 @@ describe('contracts — negotiation (revise / counter-offer)', () => {
       onEvent: [],
       onReceive: [],
       onEliminate: [],
+      onDefault: [],
       expiresRound: null
     })
     const id = game.contracts[0]!.id
@@ -320,6 +331,7 @@ describe('contracts — negotiation (revise / counter-offer)', () => {
       onEvent: [],
       onReceive: [],
       onEliminate: [],
+      onDefault: [],
       expiresRound: null
     })
     const c = game.contracts[0]!
@@ -340,6 +352,7 @@ describe('contracts — negotiation (revise / counter-offer)', () => {
       onEvent: [],
       onReceive: [],
       onEliminate: [],
+      onDefault: [],
       expiresRound: null
     })
     const id = withContract.contracts[0]!.id
@@ -351,6 +364,7 @@ describe('contracts — negotiation (revise / counter-offer)', () => {
       onEvent: [],
       onReceive: [],
       onEliminate: [],
+      onDefault: [],
       expiresRound: null
     })
     expect(after).toBe(withContract)
@@ -368,6 +382,7 @@ describe('contracts — authority', () => {
       onEvent: [],
       onReceive: [],
       onEliminate: [],
+      onDefault: [],
       expiresRound: null
     })
     const id = game.contracts[0]!.id
@@ -392,6 +407,7 @@ describe('contracts — onEliminate', () => {
       onEvent: [],
       onReceive: [],
       onEliminate: [{ from: 'a', to: 'b', give: { red: { all: 'red' } } }],
+      onDefault: [],
       expiresRound: null
     })
     const id = game.contracts[0]!.id
@@ -422,6 +438,7 @@ describe('contracts — unpaid recurring clause', () => {
       onEvent: [{ from: 'a', to: 'b', give: { red: { eventReq: 'red' } } }],
       onReceive: [],
       onEliminate: [],
+      onDefault: [],
       expiresRound: null
     })
     const id = game.contracts[0]!.id
@@ -435,5 +452,79 @@ describe('contracts — unpaid recurring clause', () => {
     // The owed party (b) decides to void it.
     const voided = applyAction(game, 'b', { type: 'cancelContract', contractId: id })
     expect(voided.contracts).toHaveLength(0)
+  })
+})
+
+describe('contracts — onDefault (if I can\'t pay)', () => {
+  it('hands over collateral when a player fails a threat they can\'t pay', () => {
+    let game = activeWith('a', 'b', 'c') // three players so the game continues
+    game = give(game, 'a', set({ green: 5 })) // has greens, but can't pay a red gate
+    game = give(game, 'b', set({ red: 9 }))
+    game = give(game, 'c', set({ red: 9 }))
+
+    // "If a can't pay an event, a gives b all their green."
+    game = applyAction(game, 'a', {
+      type: 'proposeContract',
+      parties: ['a', 'b'],
+      onSign: [],
+      onEvent: [],
+      onReceive: [],
+      onEliminate: [],
+      onDefault: [{ from: 'a', to: 'b', give: { green: { all: 'green' } } }],
+      expiresRound: null
+    })
+    const id = game.contracts[0]!.id
+    game = applyAction(game, 'b', { type: 'signContract', contractId: id })
+
+    // A penalty threat a can't pay (needs red, has none).
+    game = {
+      ...game,
+      event: {
+        name: 'Raid',
+        description: '',
+        kind: 'threat',
+        fail: 'penalty',
+        requirement: set({ red: 7 }),
+        reward: set({}),
+        penalty: set({ green: 1 })
+      }
+    }
+    const resolved = resolveEvent(game)
+    // onDefault fired (a's 5 green to b) before the penalty was applied.
+    expect(resolved.players['a']!.skittles!.green).toBe(0)
+    expect(resolved.players['b']!.skittles!.green).toBe(5)
+    expect(resolved.players['a']!.out).toBe(false) // penalty event, not elimination
+  })
+
+  it('does not fire onDefault for a missed opportunity', () => {
+    let game = activeWith('a', 'b')
+    game = give(game, 'a', set({ green: 5 }))
+    game = applyAction(game, 'a', {
+      type: 'proposeContract',
+      parties: ['a', 'b'],
+      onSign: [],
+      onEvent: [],
+      onReceive: [],
+      onEliminate: [],
+      onDefault: [{ from: 'a', to: 'b', give: { green: { all: 'green' } } }],
+      expiresRound: null
+    })
+    const id = game.contracts[0]!.id
+    game = applyAction(game, 'b', { type: 'signContract', contractId: id })
+
+    game = {
+      ...game,
+      event: {
+        name: 'Tech',
+        description: '',
+        kind: 'opportunity',
+        fail: 'none',
+        requirement: set({ red: 7 }),
+        reward: set({ red: 2 }),
+        penalty: set({})
+      }
+    }
+    const resolved = resolveEvent(game)
+    expect(resolved.players['a']!.skittles!.green).toBe(5) // kept; no default on opportunities
   })
 })

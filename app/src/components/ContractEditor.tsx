@@ -15,6 +15,7 @@ export interface EditorSubmit {
     onEvent: Transfer[],
     onReceive: Transfer[],
     onEliminate: Transfer[],
+    onDefault: Transfer[],
     expiresRound: number | null
   ): void
 }
@@ -71,13 +72,14 @@ export function ContractEditor({
 
   const submit = (): void => {
     if (clauses.length === 0) return
-    const { onSign, onEvent, onReceive, onEliminate } = clausesToBuckets(clauses)
+    const { onSign, onEvent, onReceive, onEliminate, onDefault } = clausesToBuckets(clauses)
     onSubmit(
       parties,
       onSign,
       onEvent,
       onReceive,
       onEliminate,
+      onDefault,
       expiresIn > 0 ? round + expiresIn : null
     )
   }
@@ -133,6 +135,7 @@ export function ContractEditor({
               <option value="event">Each event</option>
               <option value="receive">Each time… receives</option>
               <option value="eliminate">If… is eliminated</option>
+              <option value="default">If… can't pay</option>
             </select>
             {c.trigger === 'receive' && (
               <ColourPicker

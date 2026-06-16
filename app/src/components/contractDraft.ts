@@ -9,7 +9,7 @@
 import { SKITTLE_COLOURS, type SkittleColour } from '../generators/event.js'
 import type { AmountExpr, Contract, Transfer } from '../game/contracts.js'
 
-export type Trigger = 'now' | 'event' | 'receive' | 'eliminate'
+export type Trigger = 'now' | 'event' | 'receive' | 'eliminate' | 'default'
 
 export interface ClauseDraft {
   key: string
@@ -42,6 +42,7 @@ function bucketOf(t: Trigger): keyof Buckets {
   if (t === 'now') return 'onSign'
   if (t === 'event') return 'onEvent'
   if (t === 'eliminate') return 'onEliminate'
+  if (t === 'default') return 'onDefault'
   return 'onReceive'
 }
 
@@ -50,10 +51,17 @@ export interface Buckets {
   onEvent: Transfer[]
   onReceive: Transfer[]
   onEliminate: Transfer[]
+  onDefault: Transfer[]
 }
 
 export function clausesToBuckets(clauses: ClauseDraft[]): Buckets {
-  const buckets: Buckets = { onSign: [], onEvent: [], onReceive: [], onEliminate: [] }
+  const buckets: Buckets = {
+    onSign: [],
+    onEvent: [],
+    onReceive: [],
+    onEliminate: [],
+    onDefault: []
+  }
   for (const c of clauses) {
     const transfer: Transfer = { from: c.from, to: c.to, give: { [c.colour]: c.amount } }
     buckets[bucketOf(c.trigger)].push(transfer)
@@ -85,6 +93,7 @@ export function contractToClauses(c: Contract): ClauseDraft[] {
   add('event', c.onEvent)
   add('receive', c.onReceive)
   add('eliminate', c.onEliminate)
+  add('default', c.onDefault)
   return out
 }
 
@@ -106,6 +115,8 @@ export function describeClause(c: ClauseDraft, nameOf: (id: string) => string): 
         ? 'Each event,'
         : c.trigger === 'eliminate'
           ? `If ${nameOf(c.from)} is eliminated,`
-          : `Each time ${nameOf(c.from)} receives ${c.receiveColour},`
+          : c.trigger === 'default'
+            ? `If ${nameOf(c.from)} can't pay an event,`
+            : `Each time ${nameOf(c.from)} receives ${c.receiveColour},`
   return `${when} ${nameOf(c.from)} gives ${nameOf(c.to)} ${describeAmount(c.amount, c.colour)}.`
 }

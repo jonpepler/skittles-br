@@ -40,6 +40,7 @@ describe('contractToClauses', () => {
       onEvent: buckets.onEvent,
       onReceive: buckets.onReceive,
       onEliminate: buckets.onEliminate,
+      onDefault: [],
       expiresRound: null,
       unpaid: false,
       signFired: false

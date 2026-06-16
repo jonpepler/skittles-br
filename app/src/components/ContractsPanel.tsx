@@ -26,6 +26,7 @@ export function ContractsPanel({
     onEvent: Transfer[],
     onReceive: Transfer[],
     onEliminate: Transfer[],
+    onDefault: Transfer[],
     expiresRound: number | null
   ) => void
   onSign: (contractId: string) => void
@@ -36,6 +37,7 @@ export function ContractsPanel({
     onEvent: Transfer[],
     onReceive: Transfer[],
     onEliminate: Transfer[],
+    onDefault: Transfer[],
     expiresRound: number | null
   ) => void
   onCancel: (contractId: string) => void
@@ -61,8 +63,8 @@ export function ContractsPanel({
           selfId={selfId}
           round={round}
           submitLabel="Propose contract"
-          onSubmit={(parties, onSignT, onEventT, onReceiveT, onElimT, expires) => {
-            onPropose(parties, onSignT, onEventT, onReceiveT, onElimT, expires)
+          onSubmit={(parties, onSignT, onEventT, onReceiveT, onElimT, onDefT, expires) => {
+            onPropose(parties, onSignT, onEventT, onReceiveT, onElimT, onDefT, expires)
             setDraftKey((k) => k + 1)
           }}
         />
@@ -96,7 +98,8 @@ export function ContractsPanel({
                       onSign: c.onSign,
                       onEvent: c.onEvent,
                       onReceive: c.onReceive,
-                      onEliminate: c.onEliminate
+                      onEliminate: c.onEliminate,
+                      onDefault: c.onDefault
                     }}
                     players={playerMap}
                     viewerId={selfId}
@@ -110,8 +113,8 @@ export function ContractsPanel({
                       initialParties={c.parties}
                       initialClauses={contractToClauses(c)}
                       submitLabel="Send counter-offer"
-                      onSubmit={(parties, onSignT, onEventT, onReceiveT, onElimT, expires) => {
-                        onRevise(c.id, parties, onSignT, onEventT, onReceiveT, onElimT, expires)
+                      onSubmit={(parties, onSignT, onEventT, onReceiveT, onElimT, onDefT, expires) => {
+                        onRevise(c.id, parties, onSignT, onEventT, onReceiveT, onElimT, onDefT, expires)
                         setCountering(null)
                       }}
                       onCancel={() => setCountering(null)}

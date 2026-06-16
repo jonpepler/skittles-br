@@ -20,6 +20,7 @@ import {
   allSigned,
   diffGains,
   expireContracts,
+  fireOnDefault,
   fireOnEliminate,
   fireOnEvent,
   fireOnSign,
@@ -202,11 +203,10 @@ export function resolveEvent(state: GameState): GameState {
   if (!state.event) return state
   const { requirement, reward, penalty, fail } = state.event
 
-  // Players who can pay the requirement spend it for the reward. Those who
-  // can't face the event's failure mode: eliminated, lose skittles, or (for an
-  // opportunity) simply miss out.
+  // Players who can pay the requirement spend it for the reward; the rest are
+  // defaulters, handled per the event's failure mode below.
   const players: Record<string, PlayerState> = {}
-  const failed: string[] = [] // players an 'eliminate' event will knock out
+  const defaulters: string[] = []
   for (const [id, p] of Object.entries(state.players)) {
     if (p.out || !isValidSet(p.skittles)) {
       players[id] = p
@@ -214,22 +214,30 @@ export function resolveEvent(state: GameState): GameState {
     }
     if (canAfford(p.skittles, requirement)) {
       players[id] = { ...p, skittles: addSkittles(subSkittles(p.skittles, requirement), reward) }
-    } else if (fail === 'eliminate') {
-      players[id] = p // still alive for now; their onEliminate clauses fire below
-      failed.push(id)
-    } else if (fail === 'penalty') {
-      players[id] = { ...p, skittles: subSkittles(p.skittles, penalty) }
     } else {
-      players[id] = p // opportunity missed; no harm
+      players[id] = p // unchanged for now; consequences applied below
+      defaulters.push(id)
     }
   }
 
   let resolved: GameState = { ...state, players, event: null, eventEndsAt: null }
-  // Each failer hands over its skittles per any onEliminate contract, then is out.
-  for (const id of failed) {
-    resolved = fireOnEliminate(resolved, id)
-    const p = resolved.players[id]
-    if (p) resolved = { ...resolved, players: { ...resolved.players, [id]: { ...p, out: true } } }
+  for (const id of defaulters) {
+    if (fail === 'none') continue // opportunity missed: no default, no harm
+    // "If I can't pay" collateral fires first, then the threat's consequence.
+    resolved = fireOnDefault(resolved, id)
+    if (fail === 'eliminate') {
+      resolved = fireOnEliminate(resolved, id)
+      const p = resolved.players[id]
+      if (p) resolved = { ...resolved, players: { ...resolved.players, [id]: { ...p, out: true } } }
+    } else {
+      const p = resolved.players[id]
+      if (p?.skittles) {
+        resolved = {
+          ...resolved,
+          players: { ...resolved.players, [id]: { ...p, skittles: subSkittles(p.skittles, penalty) } }
+        }
+      }
+    }
   }
 
   // The game runs to a fixed number of events. Everyone still alive at the end
@@ -363,7 +371,8 @@ export function applyAction(
         ...action.onSign,
         ...action.onEvent,
         ...action.onReceive,
-        ...action.onEliminate
+        ...action.onEliminate,
+        ...action.onDefault
       ]
       if (!transfers.every((t) => unique.has(t.from) && unique.has(t.to))) return state
       const contract: Contract = {
@@ -374,6 +383,7 @@ export function applyAction(
         onEvent: action.onEvent,
         onReceive: action.onReceive,
         onEliminate: action.onEliminate,
+        onDefault: action.onDefault,
         expiresRound: action.expiresRound,
         signFired: false,
         unpaid: false
@@ -404,7 +414,8 @@ export function applyAction(
       const recurring =
         finalContract.onEvent.length > 0 ||
         finalContract.onReceive.length > 0 ||
-        finalContract.onEliminate.length > 0
+        finalContract.onEliminate.length > 0 ||
+        finalContract.onDefault.length > 0
       const contracts = fired.contracts
         .map((c) => (c.id === finalContract.id ? finalContract : c))
         .filter((c) => c.id !== finalContract.id || recurring)
@@ -432,7 +443,8 @@ export function applyAction(
         ...action.onSign,
         ...action.onEvent,
         ...action.onReceive,
-        ...action.onEliminate
+        ...action.onEliminate,
+        ...action.onDefault
       ]
       if (!transfers.every((t) => unique.has(t.from) && unique.has(t.to))) return state
       const revised: Contract = {
@@ -442,6 +454,7 @@ export function applyAction(
         onEvent: action.onEvent,
         onReceive: action.onReceive,
         onEliminate: action.onEliminate,
+        onDefault: action.onDefault,
         expiresRound: action.expiresRound,
         signed: [senderId],
         unpaid: false

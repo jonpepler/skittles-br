@@ -63,6 +63,14 @@ export function ContractSummary({
             </p>
           )
         }
+        if (s.trigger === 'onDefault') {
+          return (
+            <p className="summary__line" key={i}>
+              <span className="summary__when">If unable to pay</span>, {faction(s.from)} gives{' '}
+              {faction(s.to)} <Give give={s.give} />.
+            </p>
+          )
+        }
         if (s.trigger === 'onReceive') {
           const rc = receivedColour(s.give)
           return (
