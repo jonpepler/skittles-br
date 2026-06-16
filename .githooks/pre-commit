@@ -1,0 +1,10 @@
+#!/bin/sh
+# Regenerate the deterministic simulation baseline and stage it, so every commit
+# carries a verified balance snapshot. A sim failure means the engine is broken,
+# so the commit is aborted.
+set -e
+( cd app && npm run --silent sim ) >/tmp/sim-precommit.log 2>&1 || {
+  echo "pre-commit: simulation failed — commit aborted. See /tmp/sim-precommit.log"
+  exit 1
+}
+git add app/src/sim/BASELINE.md

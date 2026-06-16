@@ -61,6 +61,17 @@ concentration (top share), Events / transfers / eliminations per game, and
   so players get tangible support without the maddening, bad-faith AI deal-making
   of games like Civ. AI allies *honour* the pact rather than negotiate it.
 
+### Pre-commit hook (mandatory snapshot)
+
+A repo-tracked hook at `.githooks/pre-commit` regenerates `BASELINE.md` and
+stages it on every commit, so each commit carries a verified balance snapshot;
+a simulation failure aborts the commit (the engine is broken). Enable once per
+clone with:
+
+```
+git config core.hooksPath .githooks
+```
+
 ## Guardrails as tests
 
 The sim spec (`sim.test.ts`) currently asserts only sanity invariants and
