@@ -1,5 +1,5 @@
 import { SKITTLE_COLOURS, type SkittleColour } from '../generators/event.js'
-import type { AmountKind, DraftAmount, Modifier } from './contractDraft.js'
+import { selectedColours, type AmountKind, type DraftAmount, type Modifier } from './contractDraft.js'
 
 const clampPct = (n: number): number => Math.min(100, Math.max(0, Math.floor(n || 0)))
 const clampN = (n: number): number => Math.max(0, Math.floor(n || 0))
@@ -22,16 +22,27 @@ export function AmountChip({
 
   const toggleColour = (c: SkittleColour): void => {
     const units = { ...value.units }
+    const modUnits = { ...value.modUnits }
     if (units[c] !== undefined) {
       if (Object.keys(units).length === 1) return // keep at least one
       delete units[c]
+      delete modUnits[c]
     } else {
       units[c] = 1
+      modUnits[c] = 1
     }
-    set({ units })
+    set({ units, modUnits })
   }
   const setCount = (c: SkittleColour, n: number): void =>
     set({ units: { ...value.units, [c]: clampN(n) } })
+  const setCap = (c: SkittleColour, n: number): void =>
+    set({ modUnits: { ...value.modUnits, [c]: clampN(n) } })
+
+  const addLimit = (): void => {
+    const modUnits: DraftAmount['modUnits'] = {}
+    for (const c of selectedColours(value)) modUnits[c] = value.modUnits[c] ?? 1
+    set({ modifier: 'cap', modUnits })
+  }
 
   return (
     <span className="amt">
@@ -92,7 +103,7 @@ export function AmountChip({
       </span>
 
       {value.modifier === 'none' ? (
-        <button type="button" className="amt__addlimit" onClick={() => set({ modifier: 'cap' })}>
+        <button type="button" className="amt__addlimit" onClick={addLimit}>
           ＋ limit
         </button>
       ) : (
@@ -106,14 +117,21 @@ export function AmountChip({
             <option value="cap">but at most</option>
             <option value="plus">plus</option>
           </select>
-          <input
-            className="chip chip--num"
-            type="number"
-            min={0}
-            aria-label="amount limit amount"
-            value={value.modAmount}
-            onChange={(e) => set({ modAmount: clampN(Number(e.target.value)) })}
-          />
+          <span className="units">
+            {selectedColours(value).map((c) => (
+              <span key={c} className="unit unit--on">
+                <input
+                  className="unit__n"
+                  type="number"
+                  min={0}
+                  aria-label={`${c} limit`}
+                  value={value.modUnits[c] ?? 0}
+                  onChange={(e) => setCap(c, Number(e.target.value))}
+                />
+                <span className={`unit__dot skittle--${c}`} title={c} />
+              </span>
+            ))}
+          </span>
           <button
             type="button"
             className="amt__dellimit"

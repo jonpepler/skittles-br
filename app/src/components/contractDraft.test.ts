@@ -31,13 +31,15 @@ describe('amountToGive', () => {
     })
   })
 
-  it('wraps a cap as min and a top-up as sum, per colour', () => {
+  it('wraps a per-colour cap as min and a top-up as sum', () => {
     expect(
-      amountToGive(amt({ kind: 'percent', percent: 50, units: { red: 1 }, modifier: 'cap', modAmount: 3 }))
+      amountToGive(
+        amt({ kind: 'percent', percent: 50, units: { red: 1 }, modifier: 'cap', modUnits: { red: 3 } })
+      )
     ).toEqual({ red: { min: [{ percent: 50, of: { received: 'red' } }, 3] } })
     expect(
-      amountToGive(amt({ kind: 'number', units: { red: 2 }, modifier: 'plus', modAmount: 1 }))
-    ).toEqual({ red: { sum: [2, 1] } })
+      amountToGive(amt({ kind: 'number', units: { red: 2, green: 2 }, modifier: 'plus', modUnits: { red: 1, green: 4 } }))
+    ).toEqual({ red: { sum: [2, 1] }, green: { sum: [2, 4] } })
   })
 })
 
@@ -87,8 +89,8 @@ describe('contractToClauses', () => {
     }
     const back = contractToClauses(contract)
     expect(back.map((c) => ({ trigger: c.trigger, amount: c.amount }))).toEqual([
-      { trigger: 'now', amount: amt({ units: { red: 2, green: 3 } }) },
-      { trigger: 'receive', amount: amt({ kind: 'percent', percent: 25, units: { red: 1 } }) }
+      { trigger: 'now', amount: amt({ units: { red: 2, green: 3 }, modUnits: { red: 1, green: 1 } }) },
+      { trigger: 'receive', amount: amt({ kind: 'percent', percent: 25, units: { red: 1 }, modUnits: { red: 1 } }) }
     ])
   })
 })

@@ -27,8 +27,8 @@ export interface DraftAmount {
   /** Percentage for `percent` (always of what they received). */
   percent: number
   modifier: Modifier
-  /** The cap (`but at most`) or top-up (`plus`) count, when modifier is set. */
-  modAmount: number
+  /** The limit count per colour, mirroring `units`, when modifier is set. */
+  modUnits: Partial<Record<SkittleColour, number>>
 }
 
 export interface ClauseDraft {
@@ -45,7 +45,7 @@ export function clauseKey(): string {
 }
 
 export function newAmount(): DraftAmount {
-  return { kind: 'number', units: { red: 1 }, percent: 50, modifier: 'none', modAmount: 1 }
+  return { kind: 'number', units: { red: 1 }, percent: 50, modifier: 'none', modUnits: { red: 1 } }
 }
 
 export function newClause(from: string, to: string): ClauseDraft {
@@ -75,8 +75,9 @@ function baseExpr(a: DraftAmount, colour: SkittleColour): AmountExpr {
 /** The engine expression for one colour of an amount (with its limit applied). */
 export function colourExpr(a: DraftAmount, colour: SkittleColour): AmountExpr {
   const base = baseExpr(a, colour)
-  if (a.modifier === 'cap') return { min: [base, a.modAmount] }
-  if (a.modifier === 'plus') return { sum: [base, a.modAmount] }
+  const limit = a.modUnits[colour] ?? 0
+  if (a.modifier === 'cap') return { min: [base, limit] }
+  if (a.modifier === 'plus') return { sum: [base, limit] }
   return base
 }
 
@@ -119,13 +120,16 @@ const TRIGGER_OF: Record<keyof Buckets, Trigger> = {
   onDefault: 'default'
 }
 
-/** The kind/limit shape of one engine expression, plus the count it carries. */
-function parseExpr(expr: AmountExpr): { shape: Omit<DraftAmount, 'units'>; count: number } {
-  const shape: Omit<DraftAmount, 'units'> = { kind: 'number', percent: 50, modifier: 'none', modAmount: 1 }
+type Shape = Omit<DraftAmount, 'units' | 'modUnits'>
+
+/** The kind/modifier shape of one engine expression, plus its count and cap. */
+function parseExpr(expr: AmountExpr): { shape: Shape; count: number; limit: number } {
+  const shape: Shape = { kind: 'number', percent: 50, modifier: 'none' }
   let base: AmountExpr = expr
+  let limit = 1
   if (typeof expr === 'object' && 'min' in expr && expr.min.length === 2 && typeof expr.min[1] === 'number') {
     shape.modifier = 'cap'
-    shape.modAmount = expr.min[1]
+    limit = expr.min[1]
     base = expr.min[0]!
   } else if (
     typeof expr === 'object' &&
@@ -134,7 +138,7 @@ function parseExpr(expr: AmountExpr): { shape: Omit<DraftAmount, 'units'>; count
     typeof expr.sum[1] === 'number'
   ) {
     shape.modifier = 'plus'
-    shape.modAmount = expr.sum[1]
+    limit = expr.sum[1]
     base = expr.sum[0]!
   }
   let count = 1
@@ -148,11 +152,11 @@ function parseExpr(expr: AmountExpr): { shape: Omit<DraftAmount, 'units'>; count
     shape.kind = 'percent'
     shape.percent = base.percent
   }
-  return { shape, count }
+  return { shape, count, limit }
 }
 
 /** Reverse: turn an engine contract back into editable clause drafts, grouping
- *  colours that share a kind/limit into one multi-colour clause. */
+ *  colours that share a kind/modifier into one multi-colour clause. */
 export function contractToClauses(c: Contract): ClauseDraft[] {
   const out: ClauseDraft[] = []
   const add = (trigger: Trigger, transfers: Transfer[]): void => {
@@ -161,10 +165,11 @@ export function contractToClauses(c: Contract): ClauseDraft[] {
       for (const colour of SKITTLE_COLOURS) {
         const expr = t.give[colour]
         if (expr === undefined) continue
-        const { shape, count } = parseExpr(expr)
+        const { shape, count, limit } = parseExpr(expr)
         const key = JSON.stringify(shape)
-        const amount = groups.get(key) ?? { ...shape, units: {} }
+        const amount = groups.get(key) ?? { ...shape, units: {}, modUnits: {} }
         amount.units[colour] = count
+        amount.modUnits[colour] = limit
         groups.set(key, amount)
       }
       for (const amount of groups.values()) {

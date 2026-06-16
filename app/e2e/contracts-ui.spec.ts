@@ -46,7 +46,7 @@ test.describe('contract/trade UI', () => {
 
     // 4. Capped: a percentage, but at most a fixed number.
     await host.getByRole('button', { name: /limit/ }).click()
-    await host.getByLabel('amount limit amount').fill('5')
+    await host.getByLabel('red limit').fill('5')
     await shot('contract-4-nested')
 
     // 5. Add a third party and a second clause.

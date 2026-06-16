@@ -76,7 +76,7 @@ test.describe('mobile responsiveness', () => {
     await host.getByLabel('amount kind').selectOption('percent')
     await host.getByLabel('amount percent').fill('50')
     await host.getByRole('button', { name: /limit/ }).click()
-    await host.getByLabel('amount limit amount').fill('5')
+    await host.getByLabel('red limit').fill('5')
     await host.getByLabel('green', { exact: true }).click()
     await host.getByRole('button', { name: '+ party' }).click()
     await host.getByRole('button', { name: '+ Add clause' }).click()
