@@ -29,7 +29,7 @@ import {
   type Contract,
   type Move
 } from './contracts.js'
-import type { GameAction, GameState, LogBody, PlayerState, TradeOffer } from './types.js'
+import type { Attack, GameAction, GameState, LogBody, PlayerState, TradeOffer } from './types.js'
 
 // Re-export the skittle math so existing importers keep working.
 export { addSkittles, canAfford, emptySkittles, subSkittles } from './skittles.js'
@@ -101,7 +101,9 @@ export function createGame(roomCode: string, hostId: string): GameState {
     contracts: [],
     nextContractId: 0,
     log: [],
-    nextLogId: 0
+    nextLogId: 0,
+    attacks: [],
+    nextAttackId: 0
   }
 }
 
@@ -133,7 +135,8 @@ export function removePlayer(state: GameState, id: string): GameState {
     players,
     order: state.order.filter((p) => p !== id),
     offers: state.offers.filter((o) => o.from !== id && o.to !== id),
-    contracts: state.contracts.filter((c) => !c.parties.includes(id))
+    contracts: state.contracts.filter((c) => !c.parties.includes(id)),
+    attacks: state.attacks.filter((a) => a.from !== id && a.to !== id)
   }
 }
 
@@ -179,7 +182,7 @@ export function redactStateFor(state: GameState, viewerId: string): GameState {
   // Eliminations are public; pay/gain and transfers leak holdings, so they're
   // shown only when the viewer can see a player they involve.
   const log = state.log.filter((e) => {
-    if (e.kind === 'eliminated') return true
+    if (e.kind === 'eliminated' || e.kind === 'conquered') return true
     if (e.kind === 'event' || e.kind === 'local') return visible.has(e.player)
     return visible.has(e.from) || visible.has(e.to)
   })
@@ -292,11 +295,40 @@ export function resolveEvent(state: GameState): GameState {
   }
   resolved = appendLog(resolved, bodies)
 
+  // Then the Battle step: declared Attacks resolve.
+  resolved = resolveBattles(resolved)
+
   // The game runs to a fixed number of events. Everyone still alive at the end
   // wins (it isn't last-one-standing). It also ends early if no one is left.
   const survivors = alivePlayers(resolved).length
   const ended = survivors === 0 || resolved.round >= resolved.maxRounds
   return ended ? { ...resolved, phase: 'complete' } : resolved
+}
+
+/**
+ * The Battle step: resolve every declared Attack. The attacker must *exceed*
+ * the committed defence to Conquer — seizing the loser's holdings and marking
+ * them out, with onEliminate suppressed (the conqueror takes the spoils, not
+ * the bequest heirs). Win or lose, the escrowed Force on both sides is consumed.
+ */
+export function resolveBattles(state: GameState): GameState {
+  if (state.attacks.length === 0) return state
+  const players = { ...state.players }
+  const bodies: LogBody[] = []
+  for (const atk of state.attacks) {
+    const attacker = players[atk.from]
+    const target = players[atk.to]
+    if (!attacker || !target || attacker.out || !isValidSet(attacker.skittles)) continue
+    if (target.out || !isValidSet(target.skittles)) continue
+    if (atk.force > atk.defense) {
+      const spoils = target.skittles
+      players[atk.from] = { ...attacker, skittles: addSkittles(attacker.skittles, spoils) }
+      players[atk.to] = { ...target, skittles: emptySkittles(), out: true }
+      bodies.push({ kind: 'conquered', attacker: atk.from, target: atk.to, spoils })
+    }
+    // else: repelled — the escrowed Force on both sides is simply consumed.
+  }
+  return appendLog({ ...state, players, attacks: [] }, bodies)
 }
 
 /**
@@ -435,6 +467,49 @@ export function applyAction(
       if (!offer || (offer.from !== senderId && offer.to !== senderId)) return state
       return { ...state, offers: state.offers.filter((o) => o.id !== action.offerId) }
     }
+    case 'declareAttack': {
+      if (state.phase !== 'active') return state
+      const from = state.players[senderId]
+      const to = state.players[action.to]
+      if (!from || !to || senderId === action.to || from.out || to.out) return state
+      if (!isValidSet(from.skittles)) return state
+      const force = Math.floor(action.force)
+      if (!Number.isFinite(force) || force <= 0 || from.skittles.red < force) return state
+      // Commit (escrow) the Force out of holdings so it can't be spent twice.
+      const escrowed = withSkittles(state, senderId, { ...from.skittles, red: from.skittles.red - force })
+      const attack: Attack = { id: `attack-${state.nextAttackId}`, from: senderId, to: action.to, force, defense: 0 }
+      return { ...escrowed, attacks: [...escrowed.attacks, attack], nextAttackId: escrowed.nextAttackId + 1 }
+    }
+    case 'defend': {
+      const attack = state.attacks.find((a) => a.id === action.attackId)
+      if (!attack || attack.to !== senderId) return state
+      const me = state.players[senderId]
+      if (!me || me.out || !isValidSet(me.skittles)) return state
+      const force = Math.floor(action.force)
+      if (!Number.isFinite(force) || force <= 0 || me.skittles.red < force) return state
+      const escrowed = withSkittles(state, senderId, { ...me.skittles, red: me.skittles.red - force })
+      return {
+        ...escrowed,
+        attacks: escrowed.attacks.map((a) =>
+          a.id === action.attackId ? { ...a, defense: a.defense + force } : a
+        )
+      }
+    }
+    case 'withdrawAttack': {
+      // Peace: the attacker stands down, and the escrowed Force is returned.
+      const attack = state.attacks.find((a) => a.id === action.attackId)
+      if (!attack || attack.from !== senderId) return state
+      let next = state
+      const from = next.players[attack.from]
+      if (isValidSet(from?.skittles)) {
+        next = withSkittles(next, attack.from, { ...from!.skittles!, red: from!.skittles!.red + attack.force })
+      }
+      const to = next.players[attack.to]
+      if (attack.defense > 0 && isValidSet(to?.skittles)) {
+        next = withSkittles(next, attack.to, { ...to!.skittles!, red: to!.skittles!.red + attack.defense })
+      }
+      return { ...next, attacks: next.attacks.filter((a) => a.id !== action.attackId) }
+    }
     case 'proposeContract': {
       if (state.phase !== 'active') return state
       const parties = action.parties
@@ -561,7 +636,9 @@ export function applyAction(
         offers: [],
         contracts: [],
         log: [],
-        nextLogId: 0
+        nextLogId: 0,
+        attacks: [],
+        nextAttackId: 0
       }
     }
     default:

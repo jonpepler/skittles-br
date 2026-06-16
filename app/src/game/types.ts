@@ -35,6 +35,7 @@ export type LogBody =
   | { kind: 'event'; player: string; paid: SkittleSet; gained: SkittleSet }
   | { kind: 'transfer'; from: string; to: string; skittles: SkittleSet }
   | { kind: 'local'; player: string; gained: SkittleSet; note: string }
+  | { kind: 'conquered'; attacker: string; target: string; spoils: SkittleSet }
 
 export type LogEntry = LogBody & { id: number; round: number }
 
@@ -45,6 +46,19 @@ export type TradeOffer = {
   to: string
   give: SkittleSet
   receive: SkittleSet
+}
+
+/**
+ * A declared Attack. `force` and `defense` are red skittles escrowed out of the
+ * attacker's and target's holdings respectively; the attacker must *exceed* the
+ * defence at Battle to Conquer. Forces are consumed either way.
+ */
+export type Attack = {
+  id: string
+  from: string
+  to: string
+  force: number
+  defense: number
 }
 
 export type GameState = {
@@ -78,6 +92,10 @@ export type GameState = {
   log: LogEntry[]
   /** Monotonic counter for assigning log-entry ids. */
   nextLogId: number
+  /** Declared Attacks awaiting Battle resolution. */
+  attacks: Attack[]
+  /** Monotonic counter for assigning attack ids. */
+  nextAttackId: number
 }
 
 /**
@@ -94,6 +112,9 @@ export type GameAction =
   | { type: 'proposeTrade'; to: string; give: SkittleSet; receive: SkittleSet }
   | { type: 'acceptTrade'; offerId: string }
   | { type: 'cancelTrade'; offerId: string }
+  | { type: 'declareAttack'; to: string; force: number }
+  | { type: 'defend'; attackId: string; force: number }
+  | { type: 'withdrawAttack'; attackId: string }
   | {
       type: 'proposeContract'
       parties: string[]

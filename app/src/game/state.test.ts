@@ -14,6 +14,7 @@ import {
   playerSeed,
   redactStateFor,
   removePlayer,
+  resolveBattles,
   resolveEvent
 } from './state.js'
 import type { GameState } from './types.js'
@@ -446,5 +447,95 @@ describe('event log', () => {
 
     const resolved = resolveEvent(threat(game, set({ red: 99 }), emptySkittles()))
     expect(redactStateFor(resolved, 'a').log.some((e) => e.kind === 'eliminated' && e.player === 'd')).toBe(true)
+  })
+})
+
+describe('aggression', () => {
+  it('escrows Force out of holdings on declare and defend', () => {
+    let game = activeWith('a', 'b')
+    game = giveSkittles(game, 'a', set({ red: 5 }))
+    game = giveSkittles(game, 'b', set({ red: 4 }))
+    game = applyAction(game, 'a', { type: 'declareAttack', to: 'b', force: 3 })
+    expect(game.players['a']!.skittles!.red).toBe(2) // 5 − 3 escrowed
+    expect(game.attacks).toHaveLength(1)
+    const id = game.attacks[0]!.id
+    game = applyAction(game, 'b', { type: 'defend', attackId: id, force: 2 })
+    expect(game.players['b']!.skittles!.red).toBe(2) // 4 − 2 escrowed
+    expect(game.attacks[0]!.defense).toBe(2)
+  })
+
+  it('Conquers when Force exceeds the defence: spoils to the victor, target out', () => {
+    let game = activeWith('a', 'b')
+    game = giveSkittles(game, 'a', set({ red: 4 }))
+    game = giveSkittles(game, 'b', set({ green: 5, red: 1 }))
+    game = applyAction(game, 'a', { type: 'declareAttack', to: 'b', force: 3 })
+    const id = game.attacks[0]!.id
+    game = applyAction(game, 'b', { type: 'defend', attackId: id, force: 1 })
+    const resolved = resolveBattles(game)
+    expect(resolved.players['b']!.out).toBe(true)
+    expect(resolved.players['a']!.skittles).toEqual(set({ red: 1, green: 5 }))
+    expect(resolved.players['b']!.skittles).toEqual(emptySkittles())
+    expect(resolved.attacks).toHaveLength(0)
+    expect(resolved.log.some((e) => e.kind === 'conquered' && e.target === 'b')).toBe(true)
+  })
+
+  it('is repelled when the defence matches (ties favour the defender)', () => {
+    let game = activeWith('a', 'b')
+    game = giveSkittles(game, 'a', set({ red: 4 }))
+    game = giveSkittles(game, 'b', set({ red: 4 }))
+    game = applyAction(game, 'a', { type: 'declareAttack', to: 'b', force: 3 })
+    const id = game.attacks[0]!.id
+    game = applyAction(game, 'b', { type: 'defend', attackId: id, force: 3 })
+    const resolved = resolveBattles(game)
+    expect(resolved.players['b']!.out).toBe(false)
+    expect(resolved.players['a']!.skittles!.red).toBe(1) // 4 − 3 consumed
+    expect(resolved.players['b']!.skittles!.red).toBe(1)
+    expect(resolved.attacks).toHaveLength(0)
+  })
+
+  it('withdraw (Peace) returns escrowed Force to both sides', () => {
+    let game = activeWith('a', 'b')
+    game = giveSkittles(game, 'a', set({ red: 5 }))
+    game = giveSkittles(game, 'b', set({ red: 4 }))
+    game = applyAction(game, 'a', { type: 'declareAttack', to: 'b', force: 3 })
+    const id = game.attacks[0]!.id
+    game = applyAction(game, 'b', { type: 'defend', attackId: id, force: 2 })
+    game = applyAction(game, 'a', { type: 'withdrawAttack', attackId: id })
+    expect(game.attacks).toHaveLength(0)
+    expect(game.players['a']!.skittles!.red).toBe(5)
+    expect(game.players['b']!.skittles!.red).toBe(4)
+  })
+
+  it('only the target may defend and only the attacker may withdraw', () => {
+    let game = activeWith('a', 'b', 'c')
+    game = giveSkittles(game, 'a', set({ red: 5 }))
+    game = giveSkittles(game, 'c', set({ red: 5 }))
+    game = applyAction(game, 'a', { type: 'declareAttack', to: 'b', force: 2 })
+    const id = game.attacks[0]!.id
+    expect(applyAction(game, 'c', { type: 'defend', attackId: id, force: 1 })).toBe(game)
+    expect(applyAction(game, 'b', { type: 'withdrawAttack', attackId: id })).toBe(game)
+  })
+
+  it('Conquer suppresses onEliminate bequests (unlike Collapse)', () => {
+    let game = activeWith('a', 'b', 'c')
+    game = giveSkittles(game, 'a', set({ red: 5 }))
+    game = giveSkittles(game, 'b', set({ green: 4 }))
+    game = applyAction(game, 'b', {
+      type: 'proposeContract',
+      parties: ['b', 'c'],
+      onSign: [],
+      onEvent: [],
+      onReceive: [],
+      onEliminate: [{ from: 'b', to: 'c', give: { green: { all: 'green' } } }],
+      onDefault: [],
+      expiresRound: null
+    })
+    const cid = game.contracts[0]!.id
+    game = applyAction(game, 'c', { type: 'signContract', contractId: cid })
+    game = applyAction(game, 'a', { type: 'declareAttack', to: 'b', force: 2 })
+    const resolved = resolveBattles(game)
+    expect(resolved.players['b']!.out).toBe(true)
+    expect(resolved.players['a']!.skittles!.green).toBe(4) // spoils to the conqueror
+    expect(resolved.players['c']!.skittles!.green).toBe(0) // bequest did NOT fire
   })
 })
